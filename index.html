@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>因果推断学习台</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<style>
+/* 布局：一条长页面。先是全书地图，然后按章节顺序：每小节 = 讲解 + 一块能动手的实验台，最后一节把本章接到你的论文上。
+   色彩：两个“平行世界”各有一种颜色——做了处理 a=1 用朱红，没做处理 a=0 用钢蓝；交互控件用松绿。 */
+:root{
+  --bg:#f1f4f2; --surface:#ffffff; --sunk:#e6ebe8; --ink:#17201d; --muted:#56635e; --line:#d2dad6;
+  --accent:#2f6b4f; --accent-ink:#ffffff; --w1:#bd4a24; --w0:#2c69a0; --warn:#a15c00;
+  --w1-soft:#f6e3db; --w0-soft:#dde8f2;
+  --f-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1513; --surface:#161e1b; --sunk:#1d2723; --ink:#e1e9e5; --muted:#97a59f; --line:#2b3732;
+    --accent:#6cc297; --accent-ink:#06231a; --w1:#ff8a5e; --w0:#6eaee6; --warn:#f0b04a;
+    --w1-soft:#3a2219; --w0-soft:#192c3d; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --surface:#161e1b; --sunk:#1d2723; --ink:#e1e9e5; --muted:#97a59f; --line:#2b3732;
+  --accent:#6cc297; --accent-ink:#06231a; --w1:#ff8a5e; --w0:#6eaee6; --warn:#f0b04a;
+  --w1-soft:#3a2219; --w0-soft:#192c3d; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.75}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(2rem,5.5vw,3.2rem);line-height:1.2}
+h2{font-family:var(--f-display);font-weight:700;font-size:clamp(1.35rem,3vw,1.8rem);line-height:1.35}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0;max-width:68ch}
+a{color:var(--accent)}
+sup,sub{font-size:.72em;line-height:0}
+.m{font-family:var(--f-mono);font-size:.93em;white-space:nowrap}
+.y1{color:var(--w1);font-weight:600} .y0{color:var(--w0);font-weight:600}
+.muted{color:var(--muted)} .small{font-size:13px}
+
+nav.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.top .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+nav.top a{flex:none;text-decoration:none;color:var(--muted);font-size:13px;padding:4px 10px;border-radius:6px;white-space:nowrap}
+nav.top a:hover{background:var(--sunk);color:var(--ink)}
+nav.top a b{font-family:var(--f-mono);color:var(--accent);margin-right:4px;font-weight:600}
+
+header.hero{padding-block:44px 28px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:32px;align-items:center}
+.hero p.lead{font-size:1.05rem;color:var(--muted);margin-top:14px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+.takeaway{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:12px}
+.takeaway .label{font-size:12px;letter-spacing:.12em;color:var(--muted)}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.vs>div{border-radius:9px;padding:10px 12px;background:var(--sunk);min-width:0}
+.vs b{display:block;font-size:13px}
+.vs .f{font-family:var(--f-mono);font-size:14px;margin:4px 0}
+.vs span.small{color:var(--muted);line-height:1.5;display:block}
+
+section.ch{padding-block:44px;border-top:1px solid var(--line)}
+.ch-head{display:flex;gap:14px;align-items:baseline;margin-bottom:12px;flex-wrap:wrap}
+.ch-num{font-family:var(--f-mono);font-size:13px;color:var(--accent);font-weight:600;flex:none}
+.prose{display:grid;gap:10px;margin-bottom:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.stack{display:grid;gap:12px;align-content:start;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.lab-title{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.lab-tag{font-size:12px;font-family:var(--f-mono);color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 6px}
+.btn{font:inherit;font-size:14px;padding:5px 13px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{background:var(--sunk)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ctrl{display:grid;gap:2px;font-size:13px;color:var(--muted);min-width:0}
+.ctrl output{font-family:var(--f-mono);color:var(--ink);font-weight:600}
+input[type=range]{accent-color:var(--accent);width:200px;max-width:100%}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 8px;max-width:100%}
+:is(.btn,select,input,a,button):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.callout{border-left:3px solid var(--accent);background:var(--sunk);padding:10px 14px;border-radius:0 8px 8px 0;font-size:14px}
+.callout b{display:block;margin-bottom:2px}
+.fine{border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:14px;display:grid;gap:6px}
+.fine .t{font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.paperlink{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);font-size:14px;display:grid;gap:6px}
+.paperlink .t{font-size:12px;letter-spacing:.1em;color:var(--accent);font-weight:600}
+
+/* 全书地图 */
+.parts{display:grid;gap:18px}
+.part h3{margin-bottom:8px}
+.part h3 span{font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.chcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);display:grid;gap:4px;align-content:start}
+.chcard .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.chcard .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.chcard .nm{font-weight:700;font-size:14px;line-height:1.45}
+.chcard .en{font-size:12px;color:var(--muted);line-height:1.4}
+.chcard .pp{font-size:12.5px;line-height:1.5;color:var(--ink);border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.chcard .pp::before{content:"你的论文：";color:var(--accent);font-weight:600}
+.pill{font-size:11px;border-radius:999px;padding:0 8px;white-space:nowrap;border:1px solid var(--line);color:var(--muted)}
+.pill.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pill.next{border-color:var(--accent);color:var(--accent)}
+.chcard.done{border-color:var(--accent)}
+
+/* 宙斯和赫拉 */
+.worlds{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.world{border-radius:10px;padding:12px;display:grid;gap:4px;border:1px solid var(--line)}
+.world.a1{background:var(--w1-soft)} .world.a0{background:var(--w0-soft)}
+.world .wl{font-size:12px;letter-spacing:.08em;font-weight:600}
+.world.a1 .wl{color:var(--w1)} .world.a0 .wl{color:var(--w0)}
+.world .out{font-size:1.15rem;font-weight:700}
+.world .st{font-size:12px;color:var(--muted)}
+.world.hidden-w{opacity:.55;border-style:dashed}
+
+/* 众神表 */
+.gods{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.god{border:1px solid var(--line);border-radius:9px;padding:8px 9px;background:var(--surface);display:grid;gap:5px;font-size:13px}
+.god .gn{font-weight:700;line-height:1.3} .god .gn span{font-weight:400;color:var(--muted);font-size:11px;margin-left:4px}
+.god .po{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.cell{font:inherit;font-size:12.5px;border-radius:6px;padding:3px 4px;cursor:pointer;border:1px solid transparent;text-align:center;line-height:1.35}
+.cell small{display:block;font-size:10.5px;opacity:.85;font-family:var(--f-mono)}
+.cell.k0{background:var(--w0-soft);color:var(--ink)} .cell.k1{background:var(--w1-soft);color:var(--ink)}
+.cell.dead{font-weight:700}
+.cell.k0.dead{border-color:var(--w0)} .cell.k1.dead{border-color:var(--w1)}
+.cell.unobs{opacity:.4;border-style:dashed;border-color:var(--muted)}
+.cell.q{opacity:1;background:var(--sunk);color:var(--muted)}
+.god .eff{font-size:11.5px;color:var(--muted)}
+.god .eff.h{color:var(--w1)} .god .eff.s{color:var(--w0)}
+.god .arow{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.abtn{font:inherit;font-size:11.5px;border-radius:5px;border:1px solid var(--line);background:var(--sunk);color:var(--ink);padding:0 6px;cursor:pointer}
+.abtn.t{background:var(--w1);border-color:var(--w1);color:var(--surface)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.stat{background:var(--sunk);border-radius:9px;padding:8px 11px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);line-height:1.4}
+.stat .v{font-family:var(--f-mono);font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}
+.verdict{font-weight:700;padding:8px 12px;border-radius:8px;background:var(--sunk);font-size:14px}
+
+/* 点阵图（书中图1.1） */
+.dotfig{display:grid;gap:14px}
+.dotrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.dotbox{border-radius:9px;padding:10px;min-width:0}
+.dotbox.a1{background:var(--w1-soft)} .dotbox.a0{background:var(--w0-soft)}
+.dotbox .dl{font-size:12.5px;font-weight:600;margin-bottom:6px;line-height:1.4}
+.dots{display:flex;flex-wrap:wrap;gap:4px}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid currentColor}
+.dotbox.a1 .dot{color:var(--w1)} .dotbox.a0 .dot{color:var(--w0)}
+.dot.d{background:currentColor}
+.dotbox .dv{font-family:var(--f-mono);font-size:13px;margin-top:6px}
+
+/* 表格 */
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 条形图（HTML） */
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) 64px;gap:8px;align-items:center;font-size:13px}
+.bar .tr{height:16px;background:var(--sunk);border-radius:4px;position:relative;overflow:hidden}
+.bar .fl{position:absolute;top:0;bottom:0;left:0;background:var(--accent);border-radius:0 4px 4px 0}
+.bar .vl{font-family:var(--f-mono);text-align:right;font-variant-numeric:tabular-nums}
+canvas{display:block;width:100%;max-width:100%}
+
+/* 自测 */
+.quiz{display:grid;gap:14px}
+.q{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);display:grid;gap:8px}
+.q .qt{font-weight:600}
+.q .opts{display:flex;flex-wrap:wrap;gap:6px}
+.q .fb{font-size:14px;border-radius:8px;padding:8px 10px;background:var(--sunk)}
+.q .fb.ok b{color:var(--accent)} .q .fb.no b{color:var(--w1)}
+details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--surface)}
+details+details{margin-top:8px}
+summary{cursor:pointer;font-weight:600}
+details p{margin-top:8px}
+footer{padding-block:30px 50px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+@media (max-width:760px){
+  .hero-grid,.two,.dotrow,.worlds{grid-template-columns:minmax(0,1fr)}
+  .bar{grid-template-columns:minmax(70px,110px) minmax(0,1fr) 56px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<nav class="top" aria-label="章节导航"><div class="wrap">
+  <a href="#map"><b>◎</b>全书地图</a>
+  <a href="#s11"><b>1.1</b>个体因果效应</a>
+  <a href="#s12"><b>1.2</b>平均因果效应</a>
+  <a href="#s13"><b>1.3</b>效应怎么量</a>
+  <a href="#s14"><b>1.4</b>随机变异</a>
+  <a href="#s15"><b>1.5</b>因果 ≠ 关联</a>
+  <a href="#paper"><b>P</b>你的论文</a>
+  <a href="#quiz"><b>?</b>自测</a>
+  <a href="#terms"><b>≡</b>术语</a>
+</div></nav>
+
+<header class="hero"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">HERNÁN &amp; ROBINS《CAUSAL INFERENCE: WHAT IF》· 第 1 章</div>
+    <h1>因果推断学习台</h1>
+    <p class="lead">一章一章拆这本书。每一小节先用大白话讲清楚，再给一块能动手改数字的实验台，最后接到你那篇知识追踪论文上：Safe-DFKT-AG、DR 估计、12 技能模拟器，其实全是因果推断的语言。</p>
+    <p class="lead small">现在完成：第 1 章「因果效应的定义」全部 5 小节。下一章：第 2 章「随机试验」。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">第 1 章只需要记住这一张对比</div>
+    <div class="vs">
+      <div><b class="y1">因果</b><div class="f">Pr[Y<sup>a=1</sup>=1] vs Pr[Y<sup>a=0</sup>=1]</div><span class="small">同一群人，放进两个平行世界：全都处理 vs 全都不处理。</span></div>
+      <div><b class="y0">关联</b><div class="f">Pr[Y=1|A=1] vs Pr[Y=1|A=0]</div><span class="small">同一个现实世界，比较两群不同的人：实际被处理的 vs 实际没被处理的。</span></div>
+    </div>
+    <p class="small muted">两者相等需要额外条件（第 2、3 章讲）。你的模拟器能直接算前者，真实日志只能直接算后者。</p>
+  </div>
+</div></header>
+
+<main>
+<!-- ============ 全书地图 ============ -->
+<section class="ch" id="map"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">MAP</span><h2>全书地图：三部分、22 章，难度递增</h2></div>
+  <div class="prose">
+    <p>全书分三部分。第 I 部分不用任何统计模型，只靠定义和表格讲清楚“什么是因果”和“什么时候能从数据里识别它”。第 II 部分在变量太多、没法逐格算的时候引入模型。第 III 部分处理随时间变化的处理，比如一连串出题决策，这正是你论文的场景。</p>
+    <p class="muted small">每张卡片下面一行是这一章在你论文里的落点。学习顺序建议按章号走。第 III 部分最难，也和你最相关，但它依赖前两部分的每一个概念。</p>
+  </div>
+  <div class="parts" id="parts"></div>
+</div></section>
+
+<!-- ============ 1.1 ============ -->
+<section class="ch" id="s11"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1.1</span><h2>个体因果效应：宙斯如果没换心脏会怎样</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书一开头讲了两个人。宙斯 1 月 1 日做了心脏移植，5 天后死了。假设我们（以某种方式）知道：如果他没做移植，5 天后他还活着。那就可以说，<b>移植导致了宙斯的死亡</b>。</p>
+      <p>赫拉也在 1 月 1 日做了移植，5 天后活着。假设我们知道：如果她没做移植，5 天后也还活着。那么<b>移植对赫拉没有因果效应</b>。</p>
+      <p>书里的记号：<span class="m">A</span> 是处理（1 = 移植，0 = 不移植），<span class="m">Y</span> 是结局（1 = 死亡，0 = 存活）。<span class="m y1">Y<sup>a=1</sup></span> 是“如果接受处理”时的结局，<span class="m y0">Y<sup>a=0</sup></span> 是“如果不接受处理”时的结局。它们叫<b>潜在结果</b>或<b>反事实结果</b>。</p>
+      <p><b>个体因果效应</b>的定义只有一句：<span class="m">Y<sup>a=1</sup> ≠ Y<sup>a=0</sup></span>。</p>
+      <div class="callout"><b>因果推断的根本难题</b>每个人只活在一个世界里。宙斯实际做了移植，所以我们只能看到 <span class="m y1">Y<sup>a=1</sup></span>；<span class="m y0">Y<sup>a=0</sup></span> 永远是反事实的。个体因果效应一般无法识别，所以全书转向“平均”效应。</div>
+      <p>实际接受的处理和观察到的结局之间有一条桥：<b>一致性</b>。如果 <span class="m">A = a</span>，那么观察到的 <span class="m">Y</span> 就等于 <span class="m">Y<sup>a</sup></span>。写成一句是 <span class="m">Y = Y<sup>A</sup></span>。听起来是废话，但它要求“处理”被定义得足够清楚（第 3 章会正式讲）。</p>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>两个平行世界</h3></div>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn on" data-person="zeus" id="pZeus">宙斯</button>
+          <button class="btn" data-person="hera" id="pHera">赫拉</button>
+          <button class="btn" id="pReveal">我是上帝，全部显示</button>
+        </div>
+        <div class="worlds" id="worlds"></div>
+        <p class="small muted" id="worldNote" style="margin-top:10px"></p>
+      </div>
+      <div class="fine">
+        <div class="t">书中的细节框 · 两个隐含假设</div>
+        <p><b>没有干扰（no interference）</b>：一个人的结局不受别人是否被处理的影响。传染病疫苗就违反它：你打不打疫苗会影响我得不得病。</p>
+        <p><b>处理只有一个版本</b>：“做移植”必须是一件确定的事。换不同医生、不同心脏，如果效果不同，<span class="m">Y<sup>a=1</sup></span> 就说不清是哪个。这两条合起来常被叫做 SUTVA。</p>
+      </div>
+      <div class="paperlink">
+        <div class="t">放到你的论文里</div>
+        <p>个体 = 一个模拟学生。处理 = 出题策略 π（Random、DKT 的 closest-to-0.7 规则、Safe-DFKT-AG……）。结局 = 这个学生 60 步之后的 NLG。<span class="m">Y<sup>π</sup></span> 就是“如果用策略 π 教这个学生，他的 NLG 会是多少”。</p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 1.2 ============ -->
+<section class="ch" id="s12"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1.2</span><h2>平均因果效应：20 位神的“上帝视角表”</h2></div>
+  <div class="prose">
+    <p>书里的表 1.1 列出了宙斯一家 20 位神的两个潜在结果。这是一张现实中永远拿不到的表，因为它同时写着每个神在两个世界里的命运。</p>
+    <p><b>平均因果效应</b>的定义：在整个人群里，<span class="m y1">Pr[Y<sup>a=1</sup>=1]</span> ≠ <span class="m y0">Pr[Y<sup>a=0</sup>=1]</span>。意思是“如果全体都移植”的死亡比例，不等于“如果全体都不移植”的死亡比例。</p>
+    <p>表 1.1 里两个比例都是 10/20 = 0.5，所以平均因果效应为零。但是请数一数：有 12 位神存在个体效应，6 位被移植害死，6 位被移植救活，正好抵消。<b>平均效应为零，不等于对每个人都没效应。</b>如果每个人的个体效应都为零，叫<b>尖锐因果零假设</b>（sharp causal null），它比“平均为零”强得多。</p>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>改改看：点任意格子切换“活 / 死”</h3></div>
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn" id="g_book">恢复书中表 1.1</button>
+      <button class="btn" id="g_sharp">变成尖锐零假设</button>
+      <button class="btn" id="g_good">让移植真的有效</button>
+      <span class="small muted">左格 <span class="y0">Y<sup>a=0</sup></span> 不移植，右格 <span class="y1">Y<sup>a=1</sup></span> 移植；加粗带框 = 死亡</span>
+    </div>
+    <div class="gods" id="godsPO"></div>
+    <div class="stats" style="margin-top:14px" id="poStats"></div>
+    <div class="verdict" style="margin-top:10px" id="poVerdict"></div>
+  </div>
+</div></section>
+
+<!-- ============ 1.3 ============ -->
+<section class="ch" id="s13"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1.3</span><h2>效应怎么量：差、比、比值比</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>“有没有效应”之后的问题是“效应多大”。同一个效应可以用三种尺度表达：</p>
+      <p><b>因果风险差</b>：<span class="m">Pr[Y<sup>a=1</sup>=1] − Pr[Y<sup>a=0</sup>=1]</span>，无效应时 = 0。</p>
+      <p><b>因果风险比</b>：<span class="m">Pr[Y<sup>a=1</sup>=1] / Pr[Y<sup>a=0</sup>=1]</span>，无效应时 = 1。</p>
+      <p><b>因果比值比</b>：两个世界里“死/活”的赔率之比，无效应时 = 1。</p>
+      <p>三种尺度说的是同一个“有没有”，但讲的“多大”不同。风险差告诉你绝对影响了多少人，风险比告诉你相对倍数。风险差还能换算成<b>需治疗人数</b>（NNT）：要让 1 个人免于死亡，平均需要治疗多少人，等于 <span class="m">−1 / 风险差</span>。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里</div>
+        <p>你的主结论用的是“差”：Safe-DFKT-AG 比 DKT 的 NLG 低 <span class="m">−0.0700</span>。为什么不用“比”？DKT 的 NLG 是 <span class="m">0.0601</span>，Safe-DFKT-AG 是 <span class="m">−0.0099</span>，比值是 −0.16，没法解释。结局能取负值或接近 0 时，用差的尺度。同理，steps-to-mastery 你也报的是差：多 <span class="m">1.77</span> 步。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>拖动两个世界的死亡率</h3></div>
+      <div class="row">
+        <label class="ctrl"><span><span class="y1">Pr[Y<sup>a=1</sup>=1]</span> 全体移植时的死亡率 <output id="o_p1"></output></span><input type="range" id="r_p1" min="0.01" max="0.99" step="0.01" value="0.20"></label>
+        <label class="ctrl"><span><span class="y0">Pr[Y<sup>a=0</sup>=1]</span> 全体不移植时的死亡率 <output id="o_p0"></output></span><input type="range" id="r_p0" min="0.01" max="0.99" step="0.01" value="0.30"></label>
+      </div>
+      <div class="bars" id="riskBars"></div>
+      <div class="stats" id="measures"></div>
+      <p class="small muted" id="measureNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 1.4 ============ -->
+<section class="ch" id="s14"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1.4</span><h2>随机变异：样本里算出来的数会晃</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>到这里为止，我们假装看到了整个人群。现实里你只有一个<b>样本</b>，样本比例 <span class="m">P̂r[Y<sup>a</sup>=1]</span> 只是真实值 <span class="m">Pr[Y<sup>a</sup>=1]</span> 的<b>估计</b>。换一批人，估计值就会变。这就是抽样变异。</p>
+      <p>书里区分了两个问题。第一个是<b>识别</b>：如果有无限多的数据，能不能算出因果效应？第二个是<b>估计</b>：有限数据下，估计值离真实值多远？第 1 到 9 章基本只关心识别，第 10 章才正式处理随机变异。</p>
+      <p>书里还提到第二种随机性：潜在结果本身可能是随机的（<b>非确定性反事实</b>）。比如宙斯就算移植了，也只是“有 90% 的概率死”。好消息是：只要把 <span class="m">Pr[Y<sup>a</sup>=1]</span> 理解为期望，前面所有定义都照样成立。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里</div>
+        <p>两种随机性你都有。抽样变异：每个数据集只测了 300 个模拟学生，又跑了 5 个随机种子，所以你报了 <span class="m">95% CI [−0.0906, −0.0495]</span> 和 Wilcoxon 检验（n = 20 个“种子 × 数据集”单元）。非确定性反事实：模拟学生答题本身是抛硬币，同一个学生、同一个策略，重跑一遍 NLG 也会不同。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 4</span><h3>反复抽样，看估计值怎么晃</h3></div>
+      <p class="small muted">真实值用实验台 3 的两个滑块（真实风险差 = <b id="trueRD"></b>）。每次从超总体里给两个世界各抽 n 人，算一次估计的风险差。</p>
+      <div class="row">
+        <label class="ctrl">每组样本量 n
+          <select id="s_n"><option>20</option><option selected>100</option><option>300</option><option>2000</option></select>
+        </label>
+        <button class="btn" id="b_draw1">抽 1 次</button>
+        <button class="btn on" id="b_draw500">抽 500 次</button>
+        <button class="btn" id="b_clear">清空</button>
+      </div>
+      <canvas id="histCv" height="210" aria-label="估计风险差的直方图"></canvas>
+      <p class="small" id="histNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 1.5 ============ -->
+<section class="ch" id="s15"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1.5</span><h2>因果 ≠ 关联：同一张表，换个看法</h2></div>
+  <div class="prose">
+    <p>现实里，我们看到的是书中的表 1.2：每个神只有实际的处理 <span class="m">A</span> 和观察到的结局 <span class="m">Y</span>。13 位做了移植，其中 7 位死亡；7 位没做，其中 3 位死亡。</p>
+    <p>于是 <span class="m">Pr[Y=1|A=1] = 7/13 ≈ 0.54</span>，<span class="m">Pr[Y=1|A=0] = 3/7 ≈ 0.43</span>。两者不相等，我们说 <span class="m">A</span> 和 <span class="m">Y</span> <b>相关联</b>。可前面已经知道平均因果效应为零！表 1.2 和表 1.1 完全一致（每个神观察到的 Y 正好等于 Y<sup>A</sup>），区别只在于看哪一部分。</p>
+    <p>书里的图 1.1 一句话总结：<b>因果</b>比较的是同一群人在两种处理下的风险；<b>关联</b>比较的是按实际处理分开的两个不相交子群的风险。只要“谁接受处理”跟“这个人本来的风险”有关，两者就会分开。</p>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 5</span><h3>换一种“谁去做移植”的方式，看关联怎么变</h3></div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn on" id="a_book">书中表 1.2</button>
+      <button class="btn" id="a_coin">抛硬币决定</button>
+      <button class="btn" id="a_sick">医生只给“不治必死”的神做</button>
+      <button class="btn" id="a_well">医生只给“不治也能活”的神做</button>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <span class="small muted">视角：</span>
+      <button class="btn on" id="v_res">研究者视角（只看得到 Y）</button>
+      <button class="btn" id="v_god">上帝视角（两个潜在结果都显示）</button>
+      <span class="small muted">点神卡上的 A 按钮可以单独改处理。</span>
+    </div>
+    <div class="gods" id="godsA"></div>
+    <div class="dotfig" style="margin-top:16px">
+      <div>
+        <h3 class="small" style="margin-bottom:6px">因果：整群 20 位神，放进两个世界</h3>
+        <div class="dotrow" id="dotCausal"></div>
+      </div>
+      <div>
+        <h3 class="small" style="margin-bottom:6px">关联：现实世界，按实际处理切成两个子群</h3>
+        <div class="dotrow" id="dotAssoc"></div>
+      </div>
+    </div>
+    <div class="verdict" style="margin-top:12px" id="assocVerdict"></div>
+  </div>
+  <p class="small muted" style="margin-top:10px">注意：这一章只要求你看出“关联和因果是两回事”。什么条件下关联能等于因果（可交换性、随机化），是第 2、3 章的内容。上面“抛硬币”那个按钮就是在预告第 2 章：20 个人太少，抛硬币也会晃，但人越多，关联越接近因果。</p>
+</div></section>
+
+<!-- ============ 论文 ============ -->
+<section class="ch" id="paper"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你的论文，用第 1 章的语言重读一遍</h2></div>
+  <div class="prose">
+    <p>论文：《Does Preserving Calibration Improve Decision-Focused Knowledge Tracing? An Empirical Study and Negative Result》。在 4 个数据集（assist2009、EdNet、algebra2005、Junyi）上各拟合一个 12 技能模拟器，比较 Safe-DFKT-AG 和 DKT 等方法给模拟学生出题的效果。</p>
+    <p>第 1 章给你的最大收获是：<b>你的模拟器就是那张“上帝视角表”</b>。同一个模拟学生可以被每种策略各教一遍，于是每个学生的所有潜在结果 <span class="m">Y<sup>π</sup></span> 都能看到。真实日志则是“研究者视角表”：每个学生只被日志策略 μ 教过一次。这就是为什么你的论文把模拟器 NLG 当真值，而把真实日志上的 DR 估计只当“次要证据”。</p>
+  </div>
+
+  <div class="tbl-wrap panel" style="margin-bottom:18px">
+    <table>
+      <thead><tr><th>书中的概念</th><th>神话例子</th><th>你的论文</th></tr></thead>
+      <tbody>
+        <tr><td>个体</td><td>一位神</td><td>一个模拟学生（每个测试集 300 人）</td></tr>
+        <tr><td>处理 A</td><td>是否心脏移植</td><td>用哪个出题策略：Random、DKT+0.7 规则、Safe-DFKT-AG……</td></tr>
+        <tr><td>结局 Y</td><td>5 天后是否死亡</td><td>NLG（主指标）、steps-to-mastery、retention</td></tr>
+        <tr><td>潜在结果 Y<sup>a</sup></td><td>如果移植/不移植会怎样</td><td>如果用策略 π 教这个学生，NLG 是多少</td></tr>
+        <tr><td>上帝视角表（表 1.1）</td><td>两列都看得到</td><td>模拟器：同一学生可以被每种策略各跑一遍</td></tr>
+        <tr><td>研究者视角表（表 1.2）</td><td>只看到实际的 A 和 Y</td><td>真实日志：每个学生只经历了日志策略 μ</td></tr>
+        <tr><td>平均因果效应</td><td>Pr[Y<sup>a=1</sup>=1] − Pr[Y<sup>a=0</sup>=1]</td><td>E[NLG<sup>AG</sup>] − E[NLG<sup>DKT</sup>] = <span class="m">−0.0700</span></td></tr>
+        <tr><td>效应度量的尺度</td><td>风险差 / 风险比</td><td>你用“差”，因为 NLG 可以为负</td></tr>
+        <tr><td>随机变异</td><td>样本估计会晃</td><td>300 学生 × 5 种子，95% CI、Wilcoxon、bootstrap</td></tr>
+        <tr><td>关联 ≠ 因果</td><td>7/13 vs 3/7，但因果效应为零</td><td>ECE 和 NLG 相关（ρ = −0.57），但重校准只追回 2.9% 的差距</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <div class="lab-title"><span class="lab-tag">实验台 6</span><h3>一个缩小版的你的模拟器：亲眼看每个学生的两个潜在结果</h3></div>
+    <p class="small muted" style="margin-bottom:12px">玩具版本：12 个技能、BKT 式“学会/猜对/失误”参数、学生能力有高有低、每人 60 步、300 个学生。估计器用平滑正确率代替 DKT。数字和论文不一样，但排序一样：随机出题最好，只挑有把握的题最差（论文里没有反作弊项的 Safe-DFKT 有 93.94% 的步数花在已掌握技能上）。</p>
+    <div class="two">
+      <div class="stack">
+        <h3 class="small">每种策略的平均 NLG（300 个学生）</h3>
+        <div class="bars" id="polNLG"></div>
+      </div>
+      <div class="stack">
+        <h3 class="small">花在“已经掌握的技能”上的步数比例</h3>
+        <div class="bars" id="polMast"></div>
+      </div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <div class="row" style="margin-bottom:12px">
+      <label class="ctrl">处理 <span class="y1">A=1</span><select id="pA1"></select></label>
+      <label class="ctrl">对照 <span class="y0">A=0</span><select id="pA0"></select></label>
+    </div>
+    <div class="two">
+      <div class="stack">
+        <h3 class="small">上帝视角：前 8 个学生的两个潜在结果</h3>
+        <div class="tbl-wrap"><table id="stuTbl"></table></div>
+        <div class="stats" id="aceStats"></div>
+      </div>
+      <div class="stack">
+        <h3 class="small">300 个学生的个体效应分布（Y<sup>A=1</sup> − Y<sup>A=0</sup>）</h3>
+        <canvas id="ieCv" height="200" aria-label="个体因果效应直方图"></canvas>
+        <p class="small muted" id="ieNote"></p>
+      </div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h3 class="small" style="margin-bottom:6px">研究者视角：现实里每个学生只能被一种策略教</h3>
+    <p class="small muted" style="margin-bottom:10px">假设老师偏心：基础好的学生（能力 &gt; 0）以概率 s 被分到 <span class="y1">A=1</span>，基础弱的学生以概率 1 − s 被分到 <span class="y1">A=1</span>。s = 0.5 就是抛硬币。</p>
+    <div class="row" style="margin-bottom:10px">
+      <label class="ctrl"><span>s = <output id="o_s"></output></span><input type="range" id="r_s" min="0.5" max="1" step="0.05" value="0.9"></label>
+    </div>
+    <div class="stats" id="confStats"></div>
+    <div class="verdict" style="margin-top:10px" id="confVerdict"></div>
+  </div>
+
+  <h3 style="margin-bottom:10px">第 1 章的概念在你论文里的 6 个落点</h3>
+  <div class="two" style="margin-bottom:18px">
+    <div class="paperlink"><div class="t">① 潜在结果：为什么模拟器 NLG 是“真值”</div><p>真实日志里，每个学生只经历了日志策略 μ，Safe-DFKT-AG 教他时的 NLG 是反事实，看不到。模拟器把同一批学生交给每个策略各教一遍，等于拿到了表 1.1。代价是：真值只对“模拟器里的学生”成立，这就是你在局限里写的 12 技能模拟器问题。</p></div>
+    <div class="paperlink"><div class="t">② 处理要定义清楚：同一个模型，几个“版本”</div><p>“用 Safe-DFKT-AG 出题”不是一个确定的处理。验证 BCE 检查点：NLG <span class="m">−0.0099</span>；决策值检查点：<span class="m">0.0304</span>；同一个骨干去掉策略头：<span class="m">0.0500</span>。这就是细节框里的“处理有多个版本”。你把两种检查点并排报告，正是在把处理版本说清楚。</p></div>
+    <div class="paperlink"><div class="t">③ 估计目标（estimand）：V<sup>1SD</sup> 到底是哪个反事实</div><p>你的 DR 只在第 t 步换成目标策略 π，之后还按 μ 走，所以它估的是“一步偏离值” <span class="m">V<sup>1SD</sup>(π)</span>，不是“全程部署 π”的 <span class="m">V(π)</span>。用第 1 章的话说：两者是两个不同的潜在结果 Y<sup>a</sup>，a 指的是不同的干预。第 19 到 21 章会专门讲这种时变处理。</p></div>
+    <div class="paperlink"><div class="t">④ 平均效应 ≠ 每个单元都一样</div><p>平均差是 <span class="m">−0.0700</span>，但 Junyi 上几乎打平（<span class="m">−0.0014</span>），决策值检查点下 Junyi 甚至反超（<span class="m">+0.0181</span>）。“只在 15% 的单元里更好”说的是 20 个“种子 × 数据集”单元，不是 300 个学生的个体效应。别在答辩时把这两层混了。</p></div>
+    <div class="paperlink"><div class="t">⑤ 关联 ≠ 因果：校准那一段就是 1.5 节</div><p>在 DKT 家族里，sim-ECE 和 NLG 秩相关 <span class="m">ρ = −0.57</span>，看起来“校准越差，教得越差”。但 Platt 重校准是对校准的直接干预，只追回了 <span class="m">2.9%</span> 的差距。你在论文里写的“共同原因是策略头扭曲”，就是在说这个相关是混杂造成的，第 7 章会给它画图。</p></div>
+    <div class="paperlink"><div class="t">⑥ 关联被干预验证：反作弊项</div><p>“已掌握技能占比”和 NLG 高度相关（Uncertainty-0.5：<span class="m">62.80%</span> → NLG 最高；DKVMN：<span class="m">91.50%</span> → 最低）。光有这个关联还不够，反作弊项是一次干预：占比降 <span class="m">10.04</span> 个百分点，NLG 升 <span class="m">0.0820</span>（CI <span class="m">[0.0539, 0.1101]</span>）。消融实验本质上就是在做因果推断。</p></div>
+  </div>
+
+  <h3 style="margin-bottom:10px">审稿人可能用第 1 章问你的问题</h3>
+  <details><summary>你说模拟器 NLG 是 ground truth，那它是谁的因果效应？</summary><p>是“模拟器人群”里的平均因果效应：E[NLG<sup>π₁</sup>] − E[NLG<sup>π₂</sup>]，人群是按该数据集拟合出来的 12 技能 BKT 学生。它对真实学生成立，还需要“模拟器 ≈ 真实学生”这个额外假设，所以论文结论写成“在我们的模拟器中”。</p></details>
+  <details><summary>DR 估计对所有策略都偏高，这是因果问题还是统计问题？</summary><p>两者都有。第一，估计目标是 V<sup>1SD</sup> 而不是 V(π)，比较对象要对齐，这是识别层面的问题（你已经在模拟器里对 V<sup>1SD</sup> 本身算了真值）。第二，在对齐之后仍有偏差（DKT <span class="m">0.0683</span>，Random <span class="m">0.0754</span>），这来自有限样本、权重截断在 20 以及结局模型的误设，是估计层面的问题，会在第 12、13 章展开。</p></details>
+  <details><summary>为什么用配对差而不是比较两组均值？</summary><p>同一个“种子 × 数据集”单元里，两种方法面对的是同一批模拟学生和同一份日志。配对就是让比较尽量接近“同一群人、两个世界”的因果比较，减少单元之间的差异带来的噪声。</p></details>
+</div></section>
+
+<!-- ============ 自测 ============ -->
+<section class="ch" id="quiz"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测：6 道题，点选项看解释</h2></div>
+  <div class="quiz" id="quizBox"></div>
+</div></section>
+
+<!-- ============ 术语 ============ -->
+<section class="ch" id="terms"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">≡</span><h2>第 1 章术语速查</h2></div>
+  <div class="tbl-wrap panel">
+    <table>
+      <thead><tr><th>中文</th><th>英文</th><th>记号 / 一句话</th></tr></thead>
+      <tbody>
+        <tr><td>潜在结果 / 反事实结果</td><td>potential / counterfactual outcome</td><td><span class="m">Y<sup>a</sup></span>：如果处理取 a，结局会是什么</td></tr>
+        <tr><td>个体因果效应</td><td>individual causal effect</td><td><span class="m">Y<sup>a=1</sup> ≠ Y<sup>a=0</sup></span></td></tr>
+        <tr><td>平均因果效应</td><td>average causal effect</td><td><span class="m">Pr[Y<sup>a=1</sup>=1] ≠ Pr[Y<sup>a=0</sup>=1]</span>，连续结局用 E[·]</td></tr>
+        <tr><td>尖锐因果零假设</td><td>sharp causal null hypothesis</td><td>每个个体的效应都为零</td></tr>
+        <tr><td>一致性</td><td>consistency</td><td>若 A = a，则 Y = Y<sup>a</sup></td></tr>
+        <tr><td>干扰</td><td>interference</td><td>别人的处理影响我的结局</td></tr>
+        <tr><td>处理的多个版本</td><td>multiple versions of treatment</td><td>“同一个”处理其实有几种做法</td></tr>
+        <tr><td>因果风险差 / 比 / 比值比</td><td>causal risk difference / ratio / odds ratio</td><td>无效应时分别为 0、1、1</td></tr>
+        <tr><td>需治疗人数</td><td>number needed to treat (NNT)</td><td><span class="m">−1 / 风险差</span></td></tr>
+        <tr><td>识别 / 估计</td><td>identification / estimation</td><td>无限数据能否算出 / 有限数据算得多准</td></tr>
+        <tr><td>非确定性反事实</td><td>nondeterministic counterfactuals</td><td>潜在结果本身是随机的</td></tr>
+        <tr><td>关联</td><td>association</td><td><span class="m">Pr[Y=1|A=1] ≠ Pr[Y=1|A=0]</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout" style="margin-top:18px"><b>下一站：第 2 章 随机试验</b>为什么抛硬币分配处理能让关联等于因果（可交换性）。对应你的论文：日志策略 μ 是“随机的”吗？DR 里的倾向评分 μ̂(a|h) 就是在补救它不够随机。</div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p>原书：Hernán MA, Robins JM. <i>Causal Inference: What If</i>. Boca Raton: Chapman &amp; Hall/CRC. 作者在 <a href="https://miguelhernan.org/whatifbook" target="_blank" rel="noopener">miguelhernan.org/whatifbook</a> 免费提供英文全书和配套代码。本页的神话例子和表 1.1、1.2 来自原书第 1 章；实验台 6 的模拟器是按你的论文设定缩小的教学玩具，数字不等于论文结果。</p>
+</div></footer>
+
+<script>
+const $=s=>document.querySelector(s);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt=(x,d=2)=>(x>=0?'':'−')+Math.abs(x).toFixed(d);
+
+/* ---------- 全书地图 ---------- */
+const PARTS=[
+ ['第 I 部分','不靠模型的因果推断',[
+  [1,'因果效应的定义','A definition of causal effect','模拟器就是“上帝视角表”；NLG 差是平均因果效应','done'],
+  [2,'随机试验','Randomized experiments','日志策略 μ 够随机吗？可交换性决定 OPE 能否成立','next'],
+  [3,'观察性研究','Observational studies','真实日志上的 IPS/DR 依赖可交换性、正性、一致性'],
+  [4,'效应修饰','Effect modification','效应随数据集变：Junyi 上 AG 打平甚至反超'],
+  [5,'交互作用','Interaction','反作弊项和策略头一起改时，效果能不能相加'],
+  [6,'因果图','Graphical representation','画出 能力 → 出题 → NLG 的 DAG'],
+  [7,'混杂','Confounding','ECE 与 NLG 的相关来自共同原因（策略头）'],
+  [8,'选择偏倚','Selection bias','截断到最近 500 次、子采样 5000 人会选出谁'],
+  [9,'测量偏倚','Measurement bias','r_gain 的均值回归假象；NLG 用平滑正确率测掌握度'],
+  [10,'随机变异','Random variability','5 种子 × 4 数据集、Wilcoxon、bootstrap、Holm 校正'],
+ ]],
+ ['第 II 部分','借助模型的因果推断',[
+  [11,'为什么需要模型','Why model?','技能和历史太多，没法逐格算，只能建模'],
+  [12,'IP 加权与边际结构模型','IP weighting and marginal structural models','IPS / SNIPS、权重截断在 20'],
+  [13,'标准化与参数 g 公式','Standardization and the parametric g-formula','结局模型 q̂(h,k)：DR 里的“直接法”部分'],
+  [14,'G 估计','G-estimation of structural nested models','另一条思路，理解即可'],
+  [15,'结局回归与倾向评分','Outcome regression and propensity scores','μ̂(a|h) 就是倾向评分；交叉拟合'],
+  [16,'工具变量','Instrumental variable estimation','如果日志里有随机轮换题库，可以当工具'],
+  [17,'因果生存分析','Causal survival analysis','steps-to-mastery 是“到事件时间”'],
+  [18,'因果推断的变量选择','Variable selection for causal inference','μ̂ 和 q̂ 里该放哪些历史特征'],
+ ]],
+ ['第 III 部分','复杂纵向数据',[
+  [19,'时变处理','Time-varying treatments','60 步出题序列就是一个时变处理'],
+  [20,'处理—混杂反馈','Treatment-confounder feedback','上一题的对错影响下一题的选择，也影响结局'],
+  [21,'时变处理的 g 方法','G-methods for time-varying treatments','全程部署 V(π) 与一步偏离 V¹ˢᴰ(π) 的区别'],
+  [22,'目标试验模拟','Target trial emulation','用日志模拟“如果部署 DKT 策略”的试验'],
+ ]]];
+$('#parts').innerHTML=PARTS.map(([p,t,chs])=>`<div class="part"><h3>${p}<span>${t}</span></h3><div class="chgrid">${chs.map(([n,nm,en,pp,st])=>`<div class="chcard ${st==='done'?'done':''}"><div class="top"><span class="n">第 ${n} 章</span>${st==='done'?'<span class="pill done">已完成</span>':st==='next'?'<span class="pill next">下一章</span>':'<span class="pill">待做</span>'}</div><div class="nm">${nm}</div><div class="en">${en}</div><div class="pp">${pp}</div></div>`).join('')}</div></div>`).join('');
+
+/* ---------- 1.1 两个平行世界 ---------- */
+const PEOPLE={zeus:{nm:'宙斯',a:1,y1:1,y0:0},hera:{nm:'赫拉',a:1,y1:0,y0:0}};
+let person='zeus',reveal=false;
+function drawWorlds(){
+  const p=PEOPLE[person];const life=y=>y?'5 天后死亡':'5 天后存活';
+  const w=(a,y)=>{const obs=p.a===a;const show=obs||reveal;
+    return `<div class="world a${a} ${show?'':'hidden-w'}"><div class="wl">${a?'世界 a=1：做了移植':'世界 a=0：没做移植'}</div>
+    <div class="out">${show?life(y):'？？？'}</div><div class="st">${obs?'现实世界 · 观察到的':'平行世界 · 反事实，现实中看不到'}</div>
+    <div class="m">${a?'Y<sup>a=1</sup>':'Y<sup>a=0</sup>'} = ${show?y:'?'}</div></div>`};
+  $('#worlds').innerHTML=w(1,p.y1)+w(0,p.y0);
+  $('#worldNote').innerHTML=!reveal?`${p.nm}实际做了移植，所以只看得到左边。右边要靠“想象”或额外的假设。点“我是上帝”看看反事实。`:
+    (p.y1!==p.y0?`${p.nm}：Y<sup>a=1</sup> = ${p.y1} ≠ Y<sup>a=0</sup> = ${p.y0}，存在个体因果效应：移植导致了死亡。`:`${p.nm}：Y<sup>a=1</sup> = Y<sup>a=0</sup> = ${p.y1}，移植对${p.nm}没有因果效应。注意：只看现实世界，${p.nm}和宙斯唯一的区别是“活着”，但这本身说明不了因果。`);
+  $('#pZeus').classList.toggle('on',person==='zeus');$('#pHera').classList.toggle('on',person==='hera');$('#pReveal').classList.toggle('on',reveal);
+}
+$('#pZeus').onclick=()=>{person='zeus';drawWorlds()};$('#pHera').onclick=()=>{person='hera';drawWorlds()};
+$('#pReveal').onclick=()=>{reveal=!reveal;drawWorlds()};drawWorlds();
+
+/* ---------- 众神数据（书中表 1.1 与表 1.2） ---------- */
+// [中文名, 英文名, Y^{a=0}, Y^{a=1}, 表1.2 中的 A]
+const GODS=[['瑞亚','Rheia',0,1,0],['克洛诺斯','Kronos',1,0,0],['得墨忒耳','Demeter',0,0,0],['哈迪斯','Hades',0,0,0],['赫斯提亚','Hestia',0,0,1],
+ ['波塞冬','Poseidon',1,0,1],['赫拉','Hera',0,0,1],['宙斯','Zeus',0,1,1],['阿尔忒弥斯','Artemis',1,1,0],['阿波罗','Apollo',1,0,0],
+ ['勒托','Leto',0,1,0],['阿瑞斯','Ares',1,1,1],['雅典娜','Athena',1,1,1],['赫菲斯托斯','Hephaestus',0,1,1],['阿佛洛狄忒','Aphrodite',0,1,1],
+ ['库克罗普斯','Cyclope',0,1,1],['珀耳塞福涅','Persephone',1,1,1],['赫尔墨斯','Hermes',1,0,1],['赫柏','Hebe',1,0,1],['狄俄尼索斯','Dionysus',1,0,1]];
+let G=GODS.map(([cn,en,y0,y1,a])=>({cn,en,y0,y1,a}));
+const life=y=>y?'死':'活';
+
+function drawPO(){
+  $('#godsPO').innerHTML=G.map((g,i)=>{const e=g.y1-g.y0;
+    return `<div class="god"><div class="gn">${g.cn}<span>${g.en}</span></div><div class="po">
+      <button class="cell k0 ${g.y0?'dead':''}" data-i="${i}" data-k="y0" aria-label="${g.cn} 不移植时">${life(g.y0)}<small>Y⁰=${g.y0}</small></button>
+      <button class="cell k1 ${g.y1?'dead':''}" data-i="${i}" data-k="y1" aria-label="${g.cn} 移植时">${life(g.y1)}<small>Y¹=${g.y1}</small></button></div>
+      <div class="eff ${e>0?'h':e<0?'s':''}">${e>0?'移植害死了这位':e<0?'移植救了这位':'无个体效应'}</div></div>`}).join('');
+  const p1=G.reduce((s,g)=>s+g.y1,0),p0=G.reduce((s,g)=>s+g.y0,0);
+  const harm=G.filter(g=>g.y1>g.y0).length,save=G.filter(g=>g.y1<g.y0).length;
+  $('#poStats').innerHTML=`<div class="stat"><div class="k">Pr[Y<sup>a=1</sup>=1] 全体移植</div><div class="v y1">${p1}/20 = ${(p1/20).toFixed(2)}</div></div>
+   <div class="stat"><div class="k">Pr[Y<sup>a=0</sup>=1] 全体不移植</div><div class="v y0">${p0}/20 = ${(p0/20).toFixed(2)}</div></div>
+   <div class="stat"><div class="k">平均因果风险差</div><div class="v">${fmt((p1-p0)/20)}</div></div>
+   <div class="stat"><div class="k">有个体效应的神</div><div class="v">${harm+save} 位</div><div class="k">害 ${harm} · 救 ${save}</div></div>`;
+  let v;
+  if(harm+save===0)v='尖锐因果零假设成立：每位神的个体效应都为零，平均效应当然也为零。';
+  else if(p1===p0)v=`平均因果效应为零，但尖锐零假设不成立：${harm+save} 位神有个体效应，害和救正好抵消。这就是书中表 1.1 的情形。`;
+  else if(p1<p0)v=`移植有平均的保护效应：全体移植会比全体不移植少死 ${p0-p1} 位。`;
+  else v=`移植有平均的有害效应：全体移植会比全体不移植多死 ${p1-p0} 位。`;
+  $('#poVerdict').textContent=v;
+  drawAssoc();
+}
+$('#godsPO').addEventListener('click',e=>{const b=e.target.closest('.cell');if(!b)return;const g=G[+b.dataset.i];g[b.dataset.k]^=1;drawPO()});
+$('#g_book').onclick=()=>{G.forEach((g,i)=>{g.y0=GODS[i][2];g.y1=GODS[i][3]});drawPO()};
+$('#g_sharp').onclick=()=>{G.forEach(g=>{g.y1=g.y0});drawPO()};
+$('#g_good').onclick=()=>{G.forEach((g,i)=>{g.y0=GODS[i][2];g.y1=Math.min(GODS[i][2],GODS[i][3])});drawPO()};
+
+/* ---------- 1.3 效应度量 ---------- */
+let P1=.2,P0=.3;
+function drawMeasures(){
+  P1=+$('#r_p1').value;P0=+$('#r_p0').value;$('#o_p1').textContent=P1.toFixed(2);$('#o_p0').textContent=P0.toFixed(2);
+  $('#riskBars').innerHTML=[['全体移植',P1,'--w1'],['全体不移植',P0,'--w0']].map(([l,v,c])=>`<div class="bar"><span>${l}</span><div class="tr"><div class="fl" style="width:${v*100}%;background:var(${c})"></div></div><span class="vl">${v.toFixed(2)}</span></div>`).join('');
+  const rd=P1-P0,rr=P1/P0,or=(P1/(1-P1))/(P0/(1-P0));
+  let nnt='—';if(rd<-1e-9)nnt=(-1/rd).toFixed(1)+' 人';else if(rd>1e-9)nnt='有害：每 '+(1/rd).toFixed(1)+' 人多死 1 人';
+  $('#measures').innerHTML=`<div class="stat"><div class="k">风险差（无效应 = 0）</div><div class="v">${fmt(rd)}</div></div>
+   <div class="stat"><div class="k">风险比（无效应 = 1）</div><div class="v">${rr.toFixed(2)}</div></div>
+   <div class="stat"><div class="k">比值比（无效应 = 1）</div><div class="v">${or.toFixed(2)}</div></div>
+   <div class="stat"><div class="k">需治疗人数 NNT</div><div class="v" style="font-size:1rem">${nnt}</div></div>`;
+  $('#measureNote').textContent=Math.abs(rd)<1e-9?'两个世界一样：三种尺度同时显示“无效应”。':
+   `同一个效应：风险比说“${rr<1?'死亡风险降到 '+(rr*100).toFixed(0)+'%':'死亡风险变成 '+rr.toFixed(2)+' 倍'}”，风险差说“每 100 人${rd<0?'少':'多'}死 ${Math.abs(rd*100).toFixed(0)} 人”。试试把两个死亡率都调到很低（如 0.02 和 0.01）：风险比很吓人，风险差却很小。`;
+  $('#trueRD').textContent=fmt(rd);
+  if(window.histReset)histReset();
+}
+$('#r_p1').oninput=drawMeasures;$('#r_p0').oninput=drawMeasures;
+
+/* ---------- 1.4 随机变异 ---------- */
+let seedState=12345;const urand=()=>{seedState^=seedState<<13;seedState>>>=0;seedState^=seedState>>>17;seedState^=seedState<<5;seedState>>>=0;return seedState/4294967296};
+let draws=[];
+function binom(n,p){let k=0;for(let i=0;i<n;i++)if(urand()<p)k++;return k}
+function drawOnce(){const n=+$('#s_n').value;draws.push(binom(n,P1)/n-binom(n,P0)/n)}
+function histReset(){draws=[];drawHist()}
+window.histReset=histReset;
+function setupCanvas(cv){const dpr=window.devicePixelRatio||1;const w=cv.clientWidth||400,h=+cv.getAttribute('height');cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return{c,w,h}}
+function histogram(cv,vals,opt){
+  const{c,w,h}=setupCanvas(cv);c.clearRect(0,0,w,h);
+  const ink=css('--ink'),mut=css('--muted'),line=css('--line'),fill=css(opt.color||'--accent'),mark=css('--w1');
+  const L=10,R=w-10,T=14,B=h-26;const lo=opt.lo,hi=opt.hi,bins=opt.bins;
+  const X=v=>L+(v-lo)/(hi-lo)*(R-L);
+  c.strokeStyle=line;c.lineWidth=1;c.beginPath();c.moveTo(L,B+.5);c.lineTo(R,B+.5);c.stroke();
+  c.fillStyle=mut;c.font='11px '+css('--f-mono');c.textAlign='center';
+  opt.ticks.forEach(t=>{c.fillText(fmt(t,opt.td??1),X(t),h-8);c.beginPath();c.moveTo(X(t)+.5,B);c.lineTo(X(t)+.5,B+4);c.stroke()});
+  if(!vals.length){c.fillStyle=mut;c.font='13px '+css('--f-body');c.fillText(opt.empty||'还没有数据',w/2,h/2);return}
+  const cnt=Array(bins).fill(0);vals.forEach(v=>{let b=Math.floor((v-lo)/(hi-lo)*bins);b=Math.max(0,Math.min(bins-1,b));cnt[b]++});
+  const mx=Math.max(...cnt);const bw=(R-L)/bins;
+  c.fillStyle=fill;
+  cnt.forEach((k,i)=>{if(!k)return;const bh=(B-T)*k/mx;const x=L+i*bw+1,y=B-bh,ww=Math.max(1,bw-2);
+    c.beginPath();if(c.roundRect)c.roundRect(x,y,ww,bh,[Math.min(3,ww/2),Math.min(3,ww/2),0,0]);else c.rect(x,y,ww,bh);c.fill()});
+  if(opt.line!=null){c.strokeStyle=mark;c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.moveTo(X(opt.line),T-4);c.lineTo(X(opt.line),B);c.stroke();c.setLineDash([]);
+    c.fillStyle=ink;c.font='12px '+css('--f-body');c.textAlign=X(opt.line)>w-80?'right':'left';c.fillText(opt.lineLabel,X(opt.line)+(X(opt.line)>w-80?-5:5),T+6)}
+}
+function drawHist(){
+  const rd=P1-P0;
+  histogram($('#histCv'),draws,{lo:-1,hi:1,bins:80,ticks:[-1,-.5,0,.5,1],line:rd,lineLabel:'真实值 '+fmt(rd),empty:'点“抽 500 次”'});
+  if(!draws.length){$('#histNote').textContent='';return}
+  const s=[...draws].sort((a,b)=>a-b);const q=p=>s[Math.min(s.length-1,Math.floor(p*s.length))];
+  const wrong=draws.filter(d=>Math.sign(d)!==Math.sign(rd)&&Math.abs(rd)>1e-9).length;
+  $('#histNote').innerHTML=`已抽 ${draws.length} 次（n = ${$('#s_n').value}）。中间 95% 的估计落在 <b class="m">[${fmt(q(.025))}, ${fmt(q(.975))}]</b>。`+
+   (Math.abs(rd)>1e-9?` 有 ${(wrong/draws.length*100).toFixed(0)}% 的样本连效应的方向都估反了。`:'')+' 把 n 调大再抽，区间会变窄，大约按 1/√n 缩小。';
+}
+$('#b_draw1').onclick=()=>{drawOnce();drawHist()};
+$('#b_draw500').onclick=()=>{for(let i=0;i<500;i++)drawOnce();drawHist()};
+$('#b_clear').onclick=histReset;$('#s_n').onchange=histReset;
+
+/* ---------- 1.5 关联 ---------- */
+let view='res',coinSeed=1;
+const ABTN=['a_book','a_coin','a_sick','a_well'];
+function setAssign(id){ABTN.forEach(b=>$('#'+b).classList.toggle('on',b===id))}
+function drawAssoc(){
+  $('#godsA').innerHTML=G.map((g,i)=>{const y=g.a?g.y1:g.y0;
+    const c=(k,yy)=>{const obs=(k===1)===(g.a===1);
+      if(view==='res'&&!obs)return `<span class="cell k${k} q">?<small>Y${k?'¹':'⁰'}</small></span>`;
+      return `<span class="cell k${k} ${yy?'dead':''} ${obs?'':'unobs'}">${life(yy)}<small>Y${k?'¹':'⁰'}=${yy}</small></span>`};
+    return `<div class="god"><div class="arow"><div class="gn">${g.cn}</div><button class="abtn ${g.a?'t':''}" data-i="${i}" aria-label="切换${g.cn}的处理">A=${g.a}</button></div>
+      <div class="po">${c(0,g.y0)}${c(1,g.y1)}</div><div class="eff">观察到 Y = ${y}（${life(y)}）</div></div>`}).join('');
+  const T=G.filter(g=>g.a),U=G.filter(g=>!g.a);
+  const dT=T.filter(g=>g.y1).length,dU=U.filter(g=>g.y0).length;
+  const p1=G.reduce((s,g)=>s+g.y1,0),p0=G.reduce((s,g)=>s+g.y0,0);
+  const dots=(arr,key)=>`<div class="dots">${arr.map(g=>`<span class="dot ${g[key]?'d':''}" title="${g.cn}：${life(g[key])}"></span>`).join('')}</div>`;
+  $('#dotCausal').innerHTML=`<div class="dotbox a1"><div class="dl">全体移植（20 位）：实心 = 死</div>${dots(G,'y1')}<div class="dv">Pr[Y<sup>a=1</sup>=1] = ${p1}/20 = ${(p1/20).toFixed(2)}</div></div>
+   <div class="dotbox a0"><div class="dl">全体不移植（同样这 20 位）</div>${dots(G,'y0')}<div class="dv">Pr[Y<sup>a=0</sup>=1] = ${p0}/20 = ${(p0/20).toFixed(2)}</div></div>`;
+  const r=(a,b)=>b?`${a}/${b} = ${(a/b).toFixed(2)}`:'没有人';
+  $('#dotAssoc').innerHTML=`<div class="dotbox a1"><div class="dl">实际做了移植的 ${T.length} 位</div>${dots(T,'y1')}<div class="dv">Pr[Y=1|A=1] = ${r(dT,T.length)}</div></div>
+   <div class="dotbox a0"><div class="dl">实际没做移植的 ${U.length} 位（另一群神）</div>${dots(U,'y0')}<div class="dv">Pr[Y=1|A=0] = ${r(dU,U.length)}</div></div>`;
+  const ce=(p1-p0)/20;
+  if(!T.length||!U.length){$('#assocVerdict').textContent='有一组没人，关联无法计算。这在第 3 章叫做“正性”被违反。';return}
+  const ae=dT/T.length-dU/U.length;
+  const word=x=>Math.abs(x)<1e-9?'为零':x>0?'说移植有害':'说移植有益';
+  $('#assocVerdict').innerHTML=`因果风险差 <span class="m">${fmt(ce)}</span>（${word(ce)}），关联风险差 <span class="m">${fmt(ae)}</span>（${word(ae)}）。`+
+   (Math.abs(ae-ce)<1e-9?'这次两者恰好相等。':`差了 <span class="m">${fmt(ae-ce)}</span>。谁去做移植，跟这位神本来的风险有关，关联就偏离了因果。`);
+}
+$('#godsA').addEventListener('click',e=>{const b=e.target.closest('.abtn');if(!b)return;G[+b.dataset.i].a^=1;setAssign(null);drawAssoc()});
+$('#a_book').onclick=()=>{G.forEach((g,i)=>g.a=GODS[i][4]);setAssign('a_book');drawAssoc()};
+$('#a_coin').onclick=()=>{let s=coinSeed++*2654435761>>>0;G.forEach(g=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;g.a=(s/4294967296)<.5?1:0});setAssign('a_coin');drawAssoc()};
+$('#a_sick').onclick=()=>{G.forEach(g=>g.a=g.y0);setAssign('a_sick');drawAssoc()};
+$('#a_well').onclick=()=>{G.forEach(g=>g.a=1-g.y0);setAssign('a_well');drawAssoc()};
+$('#v_res').onclick=()=>{view='res';$('#v_res').classList.add('on');$('#v_god').classList.remove('on');drawAssoc()};
+$('#v_god').onclick=()=>{view='god';$('#v_god').classList.add('on');$('#v_res').classList.remove('on');drawAssoc()};
+
+/* ---------- 论文：玩具模拟器 ---------- */
+function rng(seed){let s=seed>>>0||1;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+const K=12,TT=60,NS=300;
+const SK=[];{const r=rng(7);for(let k=0;k<K;k++)SK.push({p0:.15+.35*r(),learn:.08+.14*r(),guess:.15+.15*r(),slip:.05+.08*r()})}
+function makeStudent(i){const r=rng(1000+i*7919);const ab=(r()+r()+r()-1.5)*1.6;
+  const m=[],U=[],V=[];for(let k=0;k<K;k++){const p0=Math.min(.95,Math.max(.02,SK[k].p0+ab*.15));m.push(r()<p0);U.push([]);V.push([]);for(let n=0;n<TT;n++){U[k].push(r());V[k].push(r())}}
+  return{i,ab,m0:m,U,V,assignU:rng(424242+i*31)()}}
+const expScore=m=>{let s=0;for(let k=0;k<K;k++)s+=m[k]?1-SK[k].slip:SK[k].guess;return s/K};
+// 一个学生被一种策略教 60 步；U/V 是这个学生固定的随机数，所以同一个学生换策略时“运气”相同
+function teach(st,policy){const m=st.m0.slice(),cnt=Array(K).fill(0),cor=Array(K).fill(0),tr=rng(9000+st.i);let onM=0;const pre=expScore(m);
+  for(let t=0;t<TT;t++){const est=cnt.map((c,k)=>(cor[k]+1)/(c+2));let k;
+    if(policy==='rand')k=Math.floor(tr()*K);
+    else{const tgt=policy==='c07'?.7:policy==='c05'?.5:null;let best=1e9,cands=[];
+      for(let j=0;j<K;j++){const sc=tgt===null?-est[j]:Math.abs(est[j]-tgt);if(sc<best-1e-9){best=sc;cands=[j]}else if(Math.abs(sc-best)<1e-9)cands.push(j)}
+      k=cands[Math.floor(tr()*cands.length)]}
+    if(m[k])onM++;const n=cnt[k],sk=SK[k];const y=st.U[k][n]<(m[k]?1-sk.slip:sk.guess);
+    const lr=Math.min(.6,sk.learn*Math.exp(st.ab*.35));if(!m[k]&&st.V[k][n]<lr)m[k]=true;cnt[k]++;cor[k]+=y}
+  return{nlg:(expScore(m)-pre)/(1-pre),onM:onM/TT}}
+const POL=[['rand','随机出题 Random'],['c05','最接近 0.5 Uncertainty-0.5'],['c07','最接近 0.7 DKT 规则'],['greedy','挑最有把握的（像无反作弊项的 Safe-DFKT）']];
+const PSHORT={rand:'随机',c05:'0.5 规则',c07:'0.7 规则',greedy:'挑最有把握'};
+const STU=[];for(let i=0;i<NS;i++)STU.push(makeStudent(i));
+const RES={};POL.forEach(([p])=>RES[p]=STU.map(s=>teach(s,p)));
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+function barList(el,items,maxv,fmtv){el.innerHTML=items.map(([l,v])=>`<div class="bar" title="${l}：${fmtv(v)}"><span>${l}</span><div class="tr"><div class="fl" style="width:${Math.max(0,v/maxv*100)}%"></div></div><span class="vl">${fmtv(v)}</span></div>`).join('')}
+{const nl=POL.map(([p])=>[PSHORT[p],mean(RES[p].map(r=>r.nlg))]),ms=POL.map(([p])=>[PSHORT[p],mean(RES[p].map(r=>r.onM))]);
+ barList($('#polNLG'),nl,Math.max(...nl.map(x=>x[1])),v=>v.toFixed(3));barList($('#polMast'),ms,1,v=>(v*100).toFixed(1)+'%')}
+['#pA1','#pA0'].forEach((id,j)=>{$(id).innerHTML=POL.map(([p,l])=>`<option value="${p}">${l}</option>`).join('');$(id).value=j?'rand':'c05'});
+
+function drawPaper(){
+  const a1=$('#pA1').value,a0=$('#pA0').value;const Y1=RES[a1].map(r=>r.nlg),Y0=RES[a0].map(r=>r.nlg);
+  const ie=Y1.map((y,i)=>y-Y0[i]);const ace=mean(ie);
+  $('#stuTbl').innerHTML=`<thead><tr><th>学生</th><th>基础</th><th class="y1">Y<sup>A=1</sup></th><th class="y0">Y<sup>A=0</sup></th><th>个体效应</th></tr></thead><tbody>`+
+    STU.slice(0,8).map((s,i)=>`<tr><td>#${i+1}</td><td>${s.ab>0?'好':'弱'}</td><td class="num">${Y1[i].toFixed(3)}</td><td class="num">${Y0[i].toFixed(3)}</td><td class="num">${fmt(ie[i],3)}</td></tr>`).join('')+'</tbody>';
+  const better=ie.filter(x=>x>1e-9).length,worse=ie.filter(x=>x<-1e-9).length;
+  $('#aceStats').innerHTML=`<div class="stat"><div class="k">平均因果效应 E[Y<sup>1</sup>] − E[Y<sup>0</sup>]</div><div class="v">${fmt(ace,3)}</div></div>
+   <div class="stat"><div class="k">A=1 更好 / 更差 / 一样</div><div class="v" style="font-size:1rem">${better} / ${worse} / ${NS-better-worse}</div></div>`;
+  const lo=Math.min(-.6,...ie),hi=Math.max(.6,...ie);
+  histogram($('#ieCv'),ie,{lo,hi,bins:40,ticks:[-1,-.5,0,.5,1].filter(t=>t>=lo&&t<=hi),line:ace,lineLabel:'平均 '+fmt(ace,3),td:1});
+  $('#ieNote').textContent=a1===a0?'两边选了同一个策略：每个学生的个体效应都是 0，这就是尖锐零假设。':
+    `个体效应有正有负，分布很宽；平均值只是其中一个数。论文表格里的每一个数字，都是这样一个分布的平均。`;
+  drawConf(Y1,Y0,ace);
+}
+function drawConf(Y1,Y0,ace){
+  const s=+$('#r_s').value;$('#o_s').textContent=s.toFixed(2);
+  let s1=0,n1=0,s0=0,n0=0;
+  STU.forEach((st,i)=>{const pA=st.ab>0?s:1-s;if(st.assignU<pA){s1+=Y1[i];n1++}else{s0+=Y0[i];n0++}});
+  if(!n1||!n0){$('#confStats').innerHTML='';$('#confVerdict').textContent='有一组没有学生。';return}
+  const assoc=s1/n1-s0/n0;
+  $('#confStats').innerHTML=`<div class="stat"><div class="k">被分到 A=1 的学生</div><div class="v">${n1} 人</div></div>
+   <div class="stat"><div class="k">关联：E[Y|A=1] − E[Y|A=0]</div><div class="v">${fmt(assoc,3)}</div></div>
+   <div class="stat"><div class="k">真实平均因果效应</div><div class="v">${fmt(ace,3)}</div></div>
+   <div class="stat"><div class="k">偏差（关联 − 因果）</div><div class="v">${fmt(assoc-ace,3)}</div></div>`;
+  const flip=Math.sign(assoc)!==Math.sign(ace)&&Math.abs(ace)>1e-9;
+  $('#confVerdict').innerHTML=(flip?'方向都反了！':'')+(s===.5?'s = 0.5 时分配与基础无关，关联只因为抽样而偏离因果（回到 1.4 节）。':
+    `基础好的学生本来就学得多，又更常被分到 A=1，于是 A=1 组“看起来”更好。这就是混杂（第 7 章）。你的真实日志里，日志策略 μ 的选择也依赖学生历史，所以真实日志上必须用 μ̂ 做加权（IPS / DR），不能直接比较。`);
+}
+$('#pA1').onchange=drawPaper;$('#pA0').onchange=drawPaper;$('#r_s').oninput=drawPaper;
+
+/* ---------- 自测 ---------- */
+const QUIZ=[
+ {q:'表 1.1 中，Pr[Y^{a=1}=1] = Pr[Y^{a=0}=1] = 0.5。下面哪个说法对？',o:['移植对每位神都没有效应','移植没有平均因果效应，但对部分神有个体效应','数据不够，没法判断'],a:1,w:'20 位里有 12 位存在个体效应（6 害 6 救），只是平均起来抵消。尖锐零假设不成立。'},
+ {q:'表 1.2 中 Pr[Y=1|A=1] = 7/13，Pr[Y=1|A=0] = 3/7。由此可以得出移植有害吗？',o:['可以，死亡率更高','不可以，这是关联，不是因果','可以，因为 7/13 和 3/7 差别很大'],a:1,w:'这两个比例比较的是两群不同的神。真实的平均因果效应为零。'},
+ {q:'你的论文用模拟器计算 NLG 真值。用第 1 章的话，模拟器提供的是什么？',o:['研究者视角表：每个学生只有一个结局','上帝视角表：同一个学生在每种策略下的潜在结果','一个更准的 AUC'],a:1,w:'模拟器让同一批学生被每种策略各教一遍，所以 Y^π 对每个 π 都能看到，平均因果效应可以直接算。'},
+ {q:'Safe-DFKT-AG 在验证 BCE 检查点得 −0.0099，在决策值检查点得 0.0304。从第 1 章看这说明什么？',o:['模型不稳定，结果不可信','“用 Safe-DFKT-AG 出题”这个处理有多个版本，需要说清是哪一个','应该只报更好的那个'],a:1,w:'这是书中“处理的多个版本”。论文两种都报，就是在把处理定义清楚。'},
+ {q:'两种策略的 NLG 分别为 0.0601 和 −0.0099。用哪种效应度量最合适？',o:['比（ratio）','差（difference）','比值比'],a:1,w:'结局能取负值，比值没有意义。论文报的是配对差 −0.0700。'},
+ {q:'s = 0.9 时（基础好的学生多半分到 A=1），关联估计为什么偏离真实效应？',o:['样本量太小','分配处理的方式和学生本来的结局有关（混杂）','模拟器有 bug'],a:1,w:'基础好的学生不管用什么策略都学得多，又更常被分到 A=1，关联就混进了“基础”的作用。'},
+];
+$('#quizBox').innerHTML=QUIZ.map((x,i)=>`<div class="q"><div class="qt">${i+1}. ${x.q.replace(/\^\{(.*?)\}/g,'<sup>$1</sup>')}</div><div class="opts">${x.o.map((o,j)=>`<button class="btn" data-q="${i}" data-o="${j}">${o}</button>`).join('')}</div><div class="fb" hidden></div></div>`).join('');
+$('#quizBox').addEventListener('click',e=>{const b=e.target.closest('button[data-q]');if(!b)return;const x=QUIZ[+b.dataset.q],box=b.closest('.q'),fb=box.querySelector('.fb');
+  box.querySelectorAll('button').forEach(z=>z.classList.remove('on'));b.classList.add('on');const ok=+b.dataset.o===x.a;
+  fb.hidden=false;fb.className='fb '+(ok?'ok':'no');fb.innerHTML=`<b>${ok?'对。':'不对。'}</b>${x.w}`});
+
+/* ---------- 启动 ---------- */
+drawPO();drawMeasures();for(let i=0;i<500;i++)drawOnce();drawHist();drawPaper();
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{drawHist();drawPaper()},150)});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{drawHist();drawPaper()});
+new MutationObserver(()=>{drawHist();drawPaper()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
+
+</body>
+</html>
