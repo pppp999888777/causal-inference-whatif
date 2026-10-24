@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 6 章 因果图 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="6">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 6 章 · 必读</div>
+    <h1>因果图</h1>
+    <p class="lead">有向无环图（DAG）把“谁影响谁”画出来。它最有用的地方是：只看图，就能判断两个变量之间会不会出现关联、条件化某个变量之后会怎样。你只需要掌握三种基本结构：<b>链</b>、<b>叉</b>、<b>对撞</b>。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">三条规则</div>
+    <p class="small"><b>链</b> A → B → C：条件化 B 会<b>阻断</b>关联。</p>
+    <p class="small"><b>叉</b> A ← B → C：条件化 B 会<b>阻断</b>关联。</p>
+    <p class="small"><b>对撞</b> A → B ← C：本来没关联，条件化 B（或它的后代）反而<b>打开</b>关联。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s61" data-short="因果图"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">6.1–6.2</span><h2>因果图是什么，关联从哪来</h2></div>
+  <div class="prose">
+    <p>因果图里，每个节点是一个变量，箭头 A → Y 表示 A 对 Y 有直接因果效应（对某些人）。“有向”是说箭头有方向，“无环”是说不能沿着箭头走回自己（一个变量不能是自己的原因）。</p>
+    <p>画图有一条硬规矩：<b>图里任意两个变量的共同原因都必须画进去</b>，即使没测量。没测量的变量书里用虚线框表示。这样画出来的图叫<b>因果 DAG</b>。</p>
+    <p>两个变量什么时候会有关联？只有两种来源：一个是另一个的原因（沿箭头有一条路），或者它们有共同原因。<b>共同的结果不产生关联</b>：下雨和洒水车都会让地面湿，但下雨和洒水车本身无关。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s63" data-short="三种结构"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">6.3</span><h2>条件化之后：阻断还是打开</h2></div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>选一种结构，看条件化 B 前后 A 和 C 的关联</h3></div>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn on" id="st_chain">链 A → B → C</button>
+      <button class="btn" id="st_fork">叉 A ← B → C</button>
+      <button class="btn" id="st_coll">对撞 A → B ← C</button>
+    </div>
+    <div class="two">
+      <div id="stDag"></div>
+      <div class="stack">
+        <p class="small muted" id="stDesc"></p>
+        <div class="bars" id="stBars"></div>
+        <div class="verdict" id="stVerdict"></div>
+      </div>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:18px">
+    <p>把三条规则合在一起，就是<b>d-分离</b>：一条路径被阻断，当且仅当路径上有一个非对撞点被条件化了，或者有一个对撞点（及其所有后代）都没被条件化。两个变量之间所有路径都被阻断，它们就（在给定条件下）独立。</p>
+    <p>对撞那一条最反直觉，也最重要：它是第 8 章“选择偏倚”的根源。比如只研究住院病人（条件化“住院”），两种本来无关的病就会在住院病人里显得负相关。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s63b" data-short="路径探索"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">6.3+</span><h2>动手：在你论文的因果图里找路径</h2></div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>选题 A 和学习增益 Y 之间有哪些路径</h3></div>
+    <div class="row" style="margin-bottom:8px">
+      <span class="small muted">数据来源：</span>
+      <button class="btn on" id="g_real">真实日志</button>
+      <button class="btn" id="g_sim">模拟器</button>
+    </div>
+    <div class="row" style="margin-bottom:10px" id="condBtns"></div>
+    <div class="two">
+      <div id="pDag"></div>
+      <div class="stack">
+        <div class="tbl-wrap"><table id="pathTbl"></table></div>
+        <div class="verdict" id="pathVerdict"></div>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:10px">节点：U 学生能力（没直接测量），H 到第 t 步为止的答题历史，C 课堂和老师（日志里没有），A 第 t 步选的技能，Y 之后的学习增益，S 学生是否继续答下去（日志里只有继续答的人才有后续记录）。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s64" data-short="偏倚分类"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">6.4–6.6</span><h2>用图给偏倚分类，以及图画不出什么</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>6.4 节：正性和一致性在图里看不出来。图默认每个箭头都代表一个定义清楚的干预；如果“处理”有多个版本，严格来说应该把版本画成单独的节点。</p>
+      <p>6.5 节给出了偏倚的<b>结构分类</b>，后面三章就按这个顺序讲：</p>
+      <p><b>混杂</b>（第 7 章）：处理和结局有共同原因，存在一条开着的后门路径。<b>选择偏倚</b>（第 8 章）：条件化了一个共同结果（对撞点），打开了一条本来阻断的路径。<b>测量偏倚</b>（第 9 章）：分析用的是测量值而不是真实值。</p>
+      <p>6.6 节：因果图<b>画不出效应修饰</b>。图上 V → Y、A → Y 两个箭头，可以是“V 修饰 A 的效应”，也可以是“没有修饰”。修饰是关于效应大小的定量信息，DAG 只表示有没有效应。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 为什么模拟器里只调整 H 就够</div>
+      <p>切到“模拟器”：没有 C 这个节点，因为日志策略是你写的，只看历史 H。这时 A 和 Y 之间的后门路径只有 <span class="m">A ← H ← U → Y</span>，条件化 H 就把它阻断了。这就是第 3 章“模拟器里条件可交换性靠设计成立”的图形版本。</p>
+      <p>切到“真实日志”：多了 <span class="m">A ← C → Y</span>，C 没测量，条件化什么都关不上它。</p>
+      <p>还有一个容易忽略的对撞点：只看“继续答下去”的学生，就是条件化了 S。如果选题会影响学生是否放弃（A → S），能力也影响（U → S），条件化 S 就打开 <span class="m">A → S ← U → Y</span>。这正是第 8 章要讲的选择偏倚。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：混杂</b>有了图，就能把“混杂”精确定义为一条开着的后门路径，并且给出一个判断“该调整哪些变量”的准则。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1：三种结构 ---------- */
+const ST={
+ chain:{spec:{w:420,h:110,nodes:[{id:'A',x:60,y:55,t:'A'},{id:'B',x:210,y:55,t:'B'},{id:'C',x:360,y:55,t:'C'}],edges:[['A','B'],['B','C']]},
+   gen:r=>{const a=r()<.5;const b=r()<(a?.8:.2);const c=r()<(b?.8:.2);return[a,b,c]},desc:'A 导致 B，B 导致 C（比如：选题 → 练到某技能 → 该技能掌握）。'},
+ fork:{spec:{w:420,h:130,nodes:[{id:'A',x:60,y:95,t:'A'},{id:'B',x:210,y:30,t:'B'},{id:'C',x:360,y:95,t:'C'}],edges:[['B','A'],['B','C']]},
+   gen:r=>{const b=r()<.5;const a=r()<(b?.8:.2);const c=r()<(b?.8:.2);return[a,b,c]},desc:'B 同时导致 A 和 C（比如：学生能力 → 被选到难题，能力 → 学得多）。A 和 C 之间没有因果关系。'},
+ coll:{spec:{w:420,h:130,nodes:[{id:'A',x:60,y:30,t:'A'},{id:'B',x:210,y:95,t:'B'},{id:'C',x:360,y:30,t:'C'}],edges:[['A','B'],['C','B']]},
+   gen:r=>{const a=r()<.5,c=r()<.5;const b=r()<(.05+.45*a+.45*c);return[a,b,c]},desc:'A 和 C 互相独立，都导致 B（比如：题太难 → 放弃，基础弱 → 放弃）。'}};
+let st='chain';
+function drawST(){
+  const S=ST[st];dag($('#stDag'),{...S.spec,label:'三种基本结构'});$('#stDesc').textContent=S.desc;
+  const r=rng(5);const rows=[];for(let i=0;i<20000;i++)rows.push(S.gen(r));
+  const rd=f=>{const g1=rows.filter(x=>x[0]&&f(x)),g0=rows.filter(x=>!x[0]&&f(x));return g1.filter(x=>x[2]).length/g1.length-g0.filter(x=>x[2]).length/g0.length};
+  const all=rd(()=>1),b1=rd(x=>x[1]),b0=rd(x=>!x[1]);
+  barList($('#stBars'),[['不条件化',all],['只看 B=1',b1],['只看 B=0',b0]],{min:-.6,max:.6,fmt:v=>fmt(v,3)});
+  $('#stVerdict').innerHTML=(st==='coll'?'本来 A 和 C 无关（≈0），条件化对撞点 B 之后出现了负关联：在 B=1 的人里，知道 A=0 就“暗示”C=1。':'本来 A 和 C 有关联，条件化 B 之后关联消失：B 把路径阻断了。')+'<span class="small muted">（表中是 Pr[C=1|A=1] − Pr[C=1|A=0]，20000 个模拟个体）</span>'}
+segmented(['st_chain','st_fork','st_coll'],id=>{st=id.slice(3);drawST()});drawST();
+
+/* ---------- 实验台 2：论文因果图的路径 ---------- */
+const POS={U:[70,40],H:[70,150],C:[330,40],A:[200,150],Y:[330,150],S:[200,240]};
+let mode='real';const cond=new Set(['H']);
+function graph(){const e=[['U','H'],['U','Y'],['H','A'],['A','Y'],['A','S'],['U','S']];if(mode==='real')e.push(['C','A'],['C','Y']);return e}
+function drawPaths(){
+  const nodes=['U','H','A','Y','S'].concat(mode==='real'?['C']:[]);
+  $('#condBtns').innerHTML='<span class="small muted">条件化（调整 / 只看某一层）：</span>'+nodes.filter(n=>n!=='A'&&n!=='Y').map(n=>`<button class="btn ${cond.has(n)?'on':''}" data-n="${n}">${n}</button>`).join('');
+  const E=graph();const paths=dagPaths(E,'A','Y',cond);
+  const openEdges=new Set();paths.filter(p=>p.open&&p.backdoor).forEach(p=>{for(let i=0;i<p.nodes.length-1;i++){const a=p.nodes[i],b=p.nodes[i+1];openEdges.add(p.dirs[i]==='out'?a+b:b+a)}});
+  dag($('#pDag'),{w:400,h:280,label:'论文的因果图',nodes:nodes.map(n=>({id:n,x:POS[n][0],y:POS[n][1],t:n,cls:[n==='A'?'a':'',n==='Y'?'y':'',cond.has(n)?'cond':'',(n==='U'||n==='C')?'hid':''].join(' ')})),
+    edges:E.map(([a,b])=>[a,b,openEdges.has(a+b)?'hl':''])});
+  $('#pathTbl').innerHTML='<thead><tr><th>路径</th><th>类型</th><th>状态</th></tr></thead><tbody>'+paths.map(p=>`<tr><td class="num">${p.str}</td><td>${p.nodes.length===2?'因果路径':p.backdoor?'后门路径':'其他'}</td><td>${p.open?'<span class="'+(p.nodes.length===2?'ok-t':'bad-t')+'">开</span>':`<span class="muted">阻断（${p.blocked.v}：${p.blocked.why}）</span>`}</td></tr>`).join('')+'</tbody>';
+  const bad=paths.filter(p=>p.open&&p.nodes.length>2);
+  const hidCond=[...cond].filter(n=>n==='U'||n==='C');
+  $('#pathVerdict').innerHTML=(bad.length?`还有 ${bad.length} 条非因果路径开着，A 和 Y 的关联里混着偏倚。`:'除了 A → Y 本身，所有路径都被阻断了：在这个条件下，关联 = 因果。')+(hidCond.length?` <span class="small muted">注意：${hidCond.join('、')} 实际上没被测量，现实中没法条件化。</span>`:'');
+}
+$('#condBtns').addEventListener('click',e=>{const b=e.target.closest('button[data-n]');if(!b)return;const n=b.dataset.n;cond.has(n)?cond.delete(n):cond.add(n);drawPaths()});
+segmented(['g_real','g_sim'],id=>{mode=id==='g_real'?'real':'sim';if(mode==='sim')cond.delete('C');drawPaths()});drawPaths();
+
+quiz($('#quizBox'),[
+ {q:'A ← B → C，条件化 B 后，A 和 C：',o:['仍然相关','变得独立','变得更相关'],a:1,w:'B 是叉的中心（共同原因），条件化它阻断路径。'},
+ {q:'A → B ← C，A 和 C 本来独立。只研究 B=1 的人，A 和 C：',o:['仍然独立','通常会变得相关','一定正相关'],a:1,w:'条件化对撞点打开路径，这是选择偏倚的结构。'},
+ {q:'因果 DAG 必须画出：',o:['所有测量了的变量','任意两个变量的所有共同原因，包括没测量的','只要处理和结局'],a:1,w:'漏画共同原因，图就不能用来判断独立性。'},
+ {q:'DAG 能不能表示“A 的效应在男性里比女性里大”？',o:['能，画一条 V → A 的箭头','不能，DAG 只表示有没有效应，不表示效应大小的修饰','能，用虚线'],a:1,w:'书中 6.6 节：效应修饰是定量信息，DAG 不编码它。'},
+ {q:'在你论文的模拟器图里，为什么条件化 H 就够了？',o:['因为 H 是对撞点','因为唯一的后门路径 A ← H ← U → Y 经过 H','因为 Y 不受 U 影响'],a:1,w:'模拟器里的日志策略只看 H，没有 C，条件化 H 阻断唯一的后门路径。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

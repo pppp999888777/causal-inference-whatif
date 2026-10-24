@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 5 章 交互作用 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="5">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 5 章 · 选读</div>
+    <h1>交互作用</h1>
+    <p class="lead">效应修饰问的是“A 的效应在不同人群里是否不同”。交互作用问的是另一件事：<b>同时干预两个处理 A 和 E</b> 时，联合效应是不是两个单独效应的简单相加。这一章还讲反事实“反应类型”和充分病因。它对你的论文有一个很实际的用处：消融实验的结论能不能相加。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">加法尺度上的交互</div>
+    <div class="formula">Pr[Y<sup>a=1,e=1</sup>] − Pr[Y<sup>a=0,e=1</sup>]<br>≠ Pr[Y<sup>a=1,e=0</sup>] − Pr[Y<sup>a=0,e=0</sup>]</div>
+    <p class="small muted">四个联合潜在结果，缺一个都判断不了。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s51" data-short="定义"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">5.1–5.2</span><h2>交互需要联合干预</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里的例子：A 是心脏移植，E 是术后补充维生素。每个人有四个潜在结果 <span class="m">Y<sup>a,e</sup></span>，对应 (移植, 维生素) 的四种组合。</p>
+      <p>如果“在吃维生素的世界里移植的效应”不等于“在不吃维生素的世界里移植的效应”，就说 A 和 E 在加法尺度上有交互。用风险比来比，就是乘法尺度上的交互。和第 4 章一样，结论依赖尺度。</p>
+      <p>和效应修饰的区别：效应修饰里的 V（比如国籍）不需要能被干预；交互里的 E 必须是一个可以干预的处理，有自己的潜在结果。所以识别交互需要<b>对 A 和 E 联合</b>满足可交换性、正性和一致性。随机试验里，就是对两个处理都随机化（析因设计）。</p>
+      <div class="callout"><b>交互对比</b>IC = p<sub>11</sub> − p<sub>10</sub> − p<sub>01</sub> + p<sub>00</sub>。IC = 0 表示加法尺度上没有交互，两个处理的效应可以直接相加。</div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>四个联合潜在结果的平均</h3></div>
+      <div class="row">
+        <label class="ctrl"><span>p<sub>00</sub> 不移植、不吃维生素 <output id="o_00"></output></span><input type="range" id="s_00" min="0.02" max="0.98" step="0.02" value="0.40"></label>
+        <label class="ctrl"><span>p<sub>10</sub> 移植、不吃 <output id="o_10"></output></span><input type="range" id="s_10" min="0.02" max="0.98" step="0.02" value="0.30"></label>
+      </div>
+      <div class="row">
+        <label class="ctrl"><span>p<sub>01</sub> 不移植、吃 <output id="o_01"></output></span><input type="range" id="s_01" min="0.02" max="0.98" step="0.02" value="0.30"></label>
+        <label class="ctrl"><span>p<sub>11</sub> 移植、吃 <output id="o_11"></output></span><input type="range" id="s_11" min="0.02" max="0.98" step="0.02" value="0.10"></label>
+      </div>
+      <div class="stats" id="icStats"></div>
+      <div class="verdict" id="icVerdict"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s53" data-short="反应类型"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">5.3</span><h2>反事实反应类型：每个人属于哪一类</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>只有一个二分处理 A 时，按 (Y<sup>a=0</sup>, Y<sup>a=1</sup>) 可以把每个人分成四类：</p>
+      <p><b>注定</b>（doomed）：怎样都会死，(1, 1)。<b>受益</b>（helped）：不处理会死，处理能活，(1, 0)。<b>受害</b>（hurt）：不处理能活，处理会死，(0, 1)。<b>免疫</b>（immune）：怎样都能活，(0, 0)。</p>
+      <p>平均因果风险差等于“受害的比例 − 受益的比例”。所以平均效应为零，可以是“所有人都注定或免疫”（尖锐零假设），也可以是“受害和受益一样多”（第 1 章的表 1.1）。<b>光看数据无法区分这两种情况</b>，因为每个人只有一个潜在结果被观察到。</p>
+      <p>两个二分处理时，每个人有 4 个潜在结果，类型增加到 2<sup>4</sup> = 16 种。书里证明：如果加法尺度上存在交互，那么人群里一定有某些特定类型的人，他们的结局只有在两个处理同时出现（或同时不出现）时才会改变。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>第 1 章表 1.1 的 20 位神属于哪类</h3></div>
+      <div class="bars" id="typeBars"></div>
+      <p class="small muted">注定 + 受害 = Pr[Y<sup>a=1</sup>=1] 的分子；注定 + 受益 = Pr[Y<sup>a=0</sup>=1] 的分子。</p>
+      <h3 class="small">拖动看看：只要“受害 − 受益”不变，平均效应就不变</h3>
+      <label class="ctrl"><span>受益的比例 <output id="o_help"></output></span><input type="range" id="s_help" min="0" max="0.5" step="0.05" value="0.3"></label>
+      <label class="ctrl"><span>受害的比例 <output id="o_hurt"></output></span><input type="range" id="s_hurt" min="0" max="0.5" step="0.05" value="0.3"></label>
+      <div class="stats" id="typeStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s54" data-short="充分病因"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">5.4–5.6</span><h2>充分病因：另一种描述因果的语言</h2></div>
+  <div class="prose">
+    <p>流行病学里还有一套“充分病因”模型（俗称病因饼图）：一个结局可以由几组不同的“充分病因”引发，每组由若干“组分病因”组成，一组里的组分全部出现，结局就一定发生。比如“没移植 + 某基因”是一组，“移植 + 术后感染”是另一组。</p>
+    <p>两个处理同时出现在同一组充分病因里，叫<b>充分病因交互</b>（也叫协同）。书里说明：充分病因交互是比加法交互更“机制化”的概念；在单调性等条件下，可以从数据里的加法交互推出存在充分病因交互。书的立场是：反事实框架更基本，充分病因模型可以看作对反事实反应类型的一种细化描述。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="你的论文"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你的消融实验：效果能相加吗</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>消融实验就是一个析因设计：把模型的组件看成可以干预的“处理”，比较打开和关闭的组合。你的论文里有两个关键组件：反作弊项（AG）和策略头（head）。手上的数字（模拟器 NLG，验证 BCE 检查点）：</p>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th></th><th>有策略头</th><th>无策略头（closest-to-0.7 部署）</th></tr></thead>
+        <tbody>
+          <tr><td>无反作弊项</td><td class="num">Safe-DFKT：−0.0919</td><td class="num">Safe-DFKT w/o head：0.0500</td></tr>
+          <tr><td>有反作弊项</td><td class="num">Safe-DFKT-AG：−0.0099</td><td class="num hl"><b>没有跑</b></td></tr>
+        </tbody>
+      </table></div>
+      <p>要回答“AG 和 head 有没有交互”，需要右下角那一格。缺了它，就只能说“在有策略头的前提下，AG 让 NLG 提高了 0.0820”，不能说“AG 的效应是 +0.0820”。</p>
+      <p>同样的道理也适用于论文里的 <b>“93% 的差距来自策略头”</b>。这个分解是按“先换骨干、再加策略头”的顺序算的。如果骨干和策略头有交互，换个顺序（先加策略头、再换骨干）分出来的比例就不同。右边可以试。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>分解的顺序重要吗</h3></div>
+      <p class="small muted">已知三格：DKT 骨干 + 规则 = 0.0601；Safe-DFKT 骨干 + 规则 = 0.0500；Safe-DFKT 骨干 + 策略头 = −0.0919。第四格“DKT 骨干 + 一个训练好的策略头”论文里没有，下面让你假设它。</p>
+      <label class="ctrl"><span>假设的第四格：DKT 骨干 + 策略头 <output id="o_x"></output></span><input type="range" id="s_x" min="-0.15" max="0.08" step="0.005" value="-0.03"></label>
+      <div class="tbl-wrap"><table id="decTbl"></table></div>
+      <div class="verdict" id="decVerdict"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：因果图</b>前五章全用表格和公式。第 6 章引入有向无环图，它会让后面所有章节（混杂、选择偏倚、测量偏倚）变得直观。</div>
+</div></section>
+</main>
+
+<script>
+function drawIC(){
+  const v=id=>+$('#s_'+id).value;['00','10','01','11'].forEach(id=>$('#o_'+id).textContent=v(id).toFixed(2));
+  const e0=v('10')-v('00'),e1=v('11')-v('01'),ic=v('11')-v('10')-v('01')+v('00');
+  const mic=(v('11')/v('00'))/((v('10')/v('00'))*(v('01')/v('00')));
+  $('#icStats').innerHTML=`<div class="stat"><div class="k">不吃维生素时移植的效应</div><div class="v">${fmt(e0)}</div></div><div class="stat"><div class="k">吃维生素时移植的效应</div><div class="v">${fmt(e1)}</div></div>
+   <div class="stat"><div class="k">加法交互对比 IC</div><div class="v">${fmt(ic)}</div></div><div class="stat"><div class="k">乘法交互 RR₁₁ / (RR₁₀·RR₀₁)</div><div class="v">${mic.toFixed(2)}</div></div>`;
+  $('#icVerdict').innerHTML=`加法尺度：${Math.abs(ic)<.005?'<span class="ok-t">无交互</span>，两个效应可以相加':'<span class="bad-t">有交互</span>'}；乘法尺度：${Math.abs(Math.log(mic))<.02?'<span class="ok-t">无交互</span>':'<span class="bad-t">有交互</span>'}。`}
+['00','10','01','11'].forEach(id=>$('#s_'+id).oninput=drawIC);drawIC();
+
+// 表 1.1 的四类：注定 4、受益 6、受害 6、免疫 4
+barList($('#typeBars'),[['注定 (1,1)',4,'--muted'],['受益 (1,0)',6,'--w0'],['受害 (0,1)',6,'--w1'],['免疫 (0,0)',4,'--accent']],{min:0,max:8,fmt:v=>v+' 位'});
+function drawTypes(){const h=+$('#s_help').value,u=+$('#s_hurt').value;$('#o_help').textContent=h.toFixed(2);$('#o_hurt').textContent=u.toFixed(2);
+  const rest=1-h-u;$('#typeStats').innerHTML=`<div class="stat"><div class="k">注定 + 免疫（其余）</div><div class="v">${rest.toFixed(2)}</div></div><div class="stat"><div class="k">平均因果风险差 = 受害 − 受益</div><div class="v">${fmt(u-h)}</div></div><div class="stat"><div class="k">有个体效应的人</div><div class="v">${((h+u)*100).toFixed(0)}%</div></div>`}
+['s_help','s_hurt'].forEach(id=>$('#'+id).oninput=drawTypes);drawTypes();
+
+function drawDec(){
+  const x=+$('#s_x').value;$('#o_x').textContent=fmt(x,3);
+  const D=.0601,B=.0500,BH=-.0919,gap=D-BH;
+  const bb1=D-B,hd1=B-BH;const hd2=D-x,bb2=x-BH;const ic=BH-B-x+D;
+  $('#decTbl').innerHTML=`<thead><tr><th>分解顺序</th><th>骨干的份额</th><th>策略头的份额</th></tr></thead><tbody>
+   <tr><td>先换骨干，再加头（论文）</td><td class="num">${(bb1/gap*100).toFixed(1)}%</td><td class="num">${(hd1/gap*100).toFixed(1)}%</td></tr>
+   <tr><td>先加头，再换骨干</td><td class="num">${(bb2/gap*100).toFixed(1)}%</td><td class="num">${(hd2/gap*100).toFixed(1)}%</td></tr></tbody>`;
+  $('#decVerdict').innerHTML=Math.abs(ic)<.002?'第四格恰好让交互对比为 0：两种顺序给出同样的分解，“93%”是唯一的。':
+    `交互对比 IC = ${fmt(ic,4)}。两种顺序分出的比例不同，“93% 来自策略头”依赖于分解顺序。补跑“DKT 骨干 + 策略头”这一格，就能报告两种顺序（或取平均，即 Shapley 分解）。`}
+$('#s_x').oninput=drawDec;drawDec();
+
+quiz($('#quizBox'),[
+ {q:'交互作用和效应修饰的关键区别是：',o:['交互需要两个处理都能被干预，有联合潜在结果','交互只在乘法尺度上定义','没有区别'],a:0,w:'效应修饰的 V 只是标记人群，交互里的 E 是一个处理。'},
+ {q:'平均因果风险差等于：',o:['注定 − 免疫','受害比例 − 受益比例','受益比例 + 受害比例'],a:1,w:'Pr[Y¹=1] = 注定 + 受害，Pr[Y⁰=1] = 注定 + 受益，相减得受害 − 受益。'},
+ {q:'论文里要判断反作弊项和策略头是否有交互，还缺什么？',o:['更多随机种子','“有反作弊项、无策略头”这一格','真实日志上的 AUC'],a:1,w:'加法交互需要 2×2 的四个联合潜在结果。'},
+ {q:'如果存在交互，“93% 的差距来自策略头”这类分解：',o:['仍然唯一','依赖于分解顺序','没有意义'],a:1,w:'有交互时，不同的分解路径分到的份额不同。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

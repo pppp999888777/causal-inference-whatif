@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 8 章 选择偏倚 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="8">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 8 章 · 第二轮</div>
+    <h1>选择偏倚</h1>
+    <p class="lead">只分析“被选进来”的那部分人，就是在条件化一个变量 C（被选中、没失访、有完整记录）。如果 C 是处理和结局（或它们的原因）的<b>共同结果</b>，条件化它就打开一条对撞路径，产生选择偏倚。即使处理是随机分配的，也躲不开。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">和混杂的区别</div>
+    <p class="small"><b>混杂</b>：共同<b>原因</b>，A ← L → Y。随机化能消除。</p>
+    <p class="small"><b>选择偏倚</b>：条件化共同<b>结果</b>，A → C ← Y。随机化消除不了。</p>
+    <div class="formula">修正：IP 加权 W<sup>C</sup> = 1 / Pr[C=0 | A, L]</div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s81" data-short="结构"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">8.1–8.2</span><h2>结构和常见的例子</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>最简单的结构：<span class="m">A → C ← Y</span>。比如研究吸烟对心脏病的影响，只分析没有失访的人，而失访同时受吸烟和心脏病影响。更常见的是间接版本：<span class="m">A → L → C ← U → Y</span>，处理让人出现某些症状 L，症状让人退出研究；同时某种没测量的体质 U 既让人退出，又影响结局。</p>
+      <p>书里列举的例子：</p>
+      <p><b>差异性失访</b>（informative censoring）：失访和处理、结局都有关。<b>缺失数据</b>：只用完整记录的人。<b>健康工人偏倚</b>：只研究在职工人，而能继续工作本身就受健康影响。<b>自愿者偏倚</b>：愿意参加研究的人和不愿意的人不同。<b>Berkson 偏倚</b>：在医院里研究两种病的关系，住院是两种病的共同结果。</p>
+      <div class="callout"><b>术语提醒</b>经济学里的 selection bias 往往指“谁接受处理”带来的偏倚，在这本书的分类里那叫混杂。读别的文献时要分清是哪种结构。</div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>随机试验里的失访</h3></div>
+      <p class="small muted">20000 人随机分组，<b>处理对结局没有任何效应</b>。处理让人出现副作用 L，L 让人退出；没测量的体质 U 让人更易退出，也更易出现坏结局。只分析没退出的人。</p>
+      <div id="lfDag"></div>
+      <label class="ctrl"><span>副作用 L 对退出的影响 <output id="o_lf1"></output></span><input type="range" id="s_lf1" min="0" max="3" step="0.1" value="2"></label>
+      <label class="ctrl"><span>体质 U 对退出的影响 <output id="o_lf2"></output></span><input type="range" id="s_lf2" min="0" max="3" step="0.1" value="2"></label>
+      <div class="bars" id="lfBars"></div>
+      <p class="small" id="lfNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s83" data-short="与混杂"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">8.3–8.4</span><h2>选择偏倚、混杂和删失</h2></div>
+  <div class="prose">
+    <p>8.3 节：两种偏倚可能同时存在，结构不同，修正需要的变量也不同。修正混杂要测量 A 和 Y 的共同原因；修正选择偏倚要测量影响“被选中”的那些变量。</p>
+    <p>8.4 节：有删失时，我们真正想要的是“如果所有人都接受处理 a，<b>而且没有人失访</b>”时的结局，记作 <span class="m">Y<sup>a, c=0</sup></span>。也就是说，把“不失访”也当作一个处理，做<b>联合干预</b>。这样，选择偏倚就变成了“对处理 C 的混杂”，可以用同样的工具来处理。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s85" data-short="怎么修正"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">8.5–8.6</span><h2>怎么修正，以及什么时候选择不带来偏倚</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里的主要工具是<b>删失的 IP 加权</b>：每个没退出的人乘以 <span class="m">1 / Pr[C=0 | A, L]</span>。退出概率高的那类人，留下来的每一位都要代表更多已经退出的同类。加权后的人群就像“没人退出”的人群。条件：给定 A 和 L，退出与潜在结局无关（对 C 的可交换性），以及每类人都有一定概率留下（正性）。</p>
+      <p>注意它只能修正经过<b>测量了的</b> L 的那部分。实验台 1 里，退出还依赖没测量的 U，所以 IP 加权只能修正一部分。</p>
+      <p>8.6 节：选择不一定带来偏倚。随机抽样（比如从 EdNet 里随机抽 5000 名学生）只依赖抛硬币，不是任何变量的共同结果，不产生选择偏倚，只损失一点精度。书里还讨论了在零效应下某些选择不改变特定效应度量的情形。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 三个值得想一想的选择</div>
+      <p><b>1. 子采样。</b>EdNet 和 Junyi 随机抽 5000 名学生：随机选择，不带来偏倚。</p>
+      <p><b>2. 截断到最近 500 次。</b>交互次数受学生投入程度影响，而投入程度和能力、学习增益都有关。截断本身不删学生，但会改变每个学生的历史窗口，长期用户的早期记录被丢掉了。</p>
+      <p><b>3. 有后续记录才有奖励。</b><span class="m">r<sup>NLG</sup><sub>t</sub></span> 需要“之后在同一技能上的作答”。如果学生做了一道很难的题就放弃这个技能（或放弃整个平台），这一步就没有奖励，被排除在 DR 的样本外。这就是“只分析留下来的人”：选题 A 影响是否留下，能力 U 也影响，条件化留下 → 打开 <span class="m">A → S ← U → Y</span>。下面的实验台模拟这件事。</p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>只评估“做完 60 步”的学生会怎样</h3></div>
+    <p class="small muted" style="margin-bottom:10px">两种出题策略随机分配给 20000 名学生。策略 B 出题更难，真实效果比策略 A <b>差 0.03</b>（NLG）。能力弱的学生更容易中途放弃，难题让放弃更多。分析时只用做完全程的学生。</p>
+    <div class="row" style="margin-bottom:8px">
+      <label class="ctrl"><span>难题对放弃的影响 <output id="o_dr"></output></span><input type="range" id="s_dr" min="0" max="2.5" step="0.1" value="1.5"></label>
+      <label class="ctrl"><span>能力对放弃的影响 <output id="o_ab"></output></span><input type="range" id="s_ab" min="0" max="2.5" step="0.1" value="1.5"></label>
+    </div>
+    <div class="two">
+      <div class="bars" id="koBars"></div>
+      <div class="stats" id="koStats"></div>
+    </div>
+    <p class="small" id="koNote" style="margin-top:8px"></p>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：测量偏倚</b>前两种偏倚都假设变量测得准。第 9 章讨论测不准的情形，你的 r<sub>gain</sub> 均值回归问题就在那里。</div>
+</div></section>
+</main>
+
+<script>
+dag($('#lfDag'),{w:380,h:150,label:'失访的结构',nodes:[{id:'A',x:40,y:40,t:'A',cls:'a'},{id:'L',x:150,y:40,t:'L 副作用'},{id:'C',x:270,y:40,t:'C 退出',cls:'cond'},{id:'U',x:270,y:115,t:'U 体质',cls:'hid'},{id:'Y',x:90,y:115,t:'Y',cls:'y'}],edges:[['A','L'],['L','C'],['U','C'],['U','Y']]});
+function drawLF(){
+  const k1=+$('#s_lf1').value,k2=+$('#s_lf2').value;$('#o_lf1').textContent=k1.toFixed(1);$('#o_lf2').textContent=k2.toFixed(1);
+  const r=rng(81);const rows=[];
+  for(let i=0;i<20000;i++){const a=r()<.5?1:0;const U=r()<.5?1:0;const L=r()<(a?.7:.2)?1:0;const pc=expit(-2+k1*L+k2*U);const c=r()<pc?1:0;const y=r()<(U?.5:.15)?1:0;rows.push({a,U,L,c,y,pc})}
+  const rate=(arr)=>arr.filter(x=>x.y).length/arr.length;
+  const all=rate(rows.filter(x=>x.a))-rate(rows.filter(x=>!x.a));
+  const kept=rows.filter(x=>!x.c);const cc=rate(kept.filter(x=>x.a))-rate(kept.filter(x=>!x.a));
+  // 删失的 IP 加权：Pr[C=0|A,L] 从数据估计
+  const pkeep={};for(const a of[0,1])for(const l of[0,1]){const g=rows.filter(x=>x.a===a&&x.L===l);pkeep[a+''+l]=g.filter(x=>!x.c).length/g.length}
+  const wr=a=>{const g=kept.filter(x=>x.a===a);const w=g.map(x=>1/pkeep[a+''+x.L]);return g.reduce((s,x,i)=>s+w[i]*x.y,0)/w.reduce((s,v)=>s+v,0)};
+  const ipcw=wr(1)-wr(0);
+  barList($('#lfBars'),[['真实效应',0,'--muted'],['全部人（现实中拿不到）',all],['只看没退出的',cc,'--w1'],['IP 加权（按 A、L）',ipcw]],{min:-.15,max:.15,fmt:v=>fmt(v,3)});
+  $('#lfNote').innerHTML=`退出比例 ${(rows.filter(x=>x.c).length/200).toFixed(0)}%。只看留下的人，处理组“看起来”${cc<0?'更好':'更差'}（${fmt(cc,3)}）：处理组的人因副作用退出，留下来的处理组成员体质偏好。${k2>0?(Math.abs(ipcw)<Math.abs(cc)-.003?'IP 加权只能用测量了的 L，退出还取决于没测量的 U，所以只修正了一部分。':'IP 加权几乎没帮上忙：这里的偏倚主要走 A → L → C ← U → Y 这条路，而 U 没测量，按 L 加权关不上它。')+'把 U 的影响拉到 0，IP 加权就完全正确了。':'现在退出只取决于测量了的 L，IP 加权完全修正了偏倚。'}`}
+['s_lf1','s_lf2'].forEach(id=>$('#'+id).oninput=drawLF);drawLF();
+
+function drawKO(){
+  const d=+$('#s_dr').value,b=+$('#s_ab').value;$('#o_dr').textContent=d.toFixed(1);$('#o_ab').textContent=b.toFixed(1);
+  const r=rng(88);let sA=0,nA=0,sB=0,nB=0,tA=0,tB=0,NA=0,NB=0,abA=0,abB=0;
+  for(let i=0;i<20000;i++){const U=randn(r);const B=r()<.5;const y=.12+.05*U-(B?.03:0)+randn(r)*.04;const done=r()<expit(1.2+b*U-(B?d:0));
+    if(B){tB+=y;NB++;if(done){sB+=y;nB++;abB+=U}}else{tA+=y;NA++;if(done){sA+=y;nA++;abA+=U}}}
+  const truth=tB/NB-tA/NA,obs=sB/nB-sA/nA;
+  barList($('#koBars'),[['真实效应 B − A',truth,'--muted'],['只看做完的学生',obs,'--w1']],{min:-.06,max:.06,fmt:v=>fmt(v,3)});
+  $('#koStats').innerHTML=`<div class="stat"><div class="k">做完比例 A / B</div><div class="v">${(nA/NA*100).toFixed(0)}% / ${(nB/NB*100).toFixed(0)}%</div></div><div class="stat"><div class="k">做完者的平均能力 A / B</div><div class="v">${fmt(abA/nA,2)} / ${fmt(abB/nB,2)}</div></div>`;
+  $('#koNote').textContent=obs>0?'方向都反了：难的策略 B 吓跑了弱学生，留下来的 B 组学生更强，于是 B 看起来更好。':`偏差 ${fmt(obs-truth,3)}。把“难题对放弃的影响”调大，看看何时方向反转。`}
+['s_dr','s_ab'].forEach(id=>$('#'+id).oninput=drawKO);drawKO();
+
+quiz($('#quizBox'),[
+ {q:'随机试验能消除选择偏倚吗？',o:['能，随机化消除一切偏倚','不能，失访等选择发生在随机化之后','只有样本很大时能'],a:1,w:'随机化保证分组时可交换，但之后条件化“留下来”仍可能打开对撞路径。'},
+ {q:'在医院里发现两种疾病负相关，最可能是：',o:['一种病预防另一种病','Berkson 偏倚：住院是两种病的共同结果','混杂'],a:1,w:'只看住院病人就是条件化了对撞点。'},
+ {q:'删失的 IP 加权要求：',o:['退出只依赖测量了的变量（给定 A、L 后与潜在结局无关）','所有人都退出','处理是随机的'],a:0,w:'这是对“删失”这个处理的条件可交换性。'},
+ {q:'从 EdNet 中随机抽 5000 名学生会带来选择偏倚吗？',o:['会','不会，随机抽样不是任何变量的共同结果','取决于学生能力'],a:1,w:'书中 8.6 节：选择不一定带来偏倚。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

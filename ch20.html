@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 20 章 处理—混杂反馈 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="20">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 III 部分 · 第 20 章 · 必读</div>
+    <h1>处理—混杂反馈</h1>
+    <p class="lead">之前的处理影响了 L，L 又影响之后的处理和结局。这叫<b>处理—混杂反馈</b>。它让所有“传统方法”（分层、匹配、回归调整）失效：不调整 L 有混杂，调整 L 会挡住部分效应并打开对撞路径。这一章用一个两步出题的例子，让你亲眼看到两种做法都错，而且<b>即使真实效应为零</b>，它们也会算出一个不为零的数。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">两难</div>
+    <p class="small"><b>不调整 L₁</b>：A₁ ← L₁ ← U → Y 是开着的后门路径。</p>
+    <p class="small"><b>调整 L₁</b>：挡住 A₀ → L₁ → … 的效应，还打开 A₀ → L₁ ← U → Y。</p>
+    <p class="small"><b>出路</b>：g 方法（第 21 章）。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s201" data-short="反馈结构"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">20.1</span><h2>反馈的结构</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里的例子是 HIV 治疗：第 0 期是否用抗病毒药 A₀ 会影响第 1 期的 CD4 计数 L₁；L₁ 低的人更可能在第 1 期用药 A₁；L₁ 同时反映了病人的健康状态，和未测量的体质 U 有关，U 也影响结局 Y。</p>
+      <p>换成出题：第 0 步出难题还是简单题（A₀）影响学生下一题是否答对（L₁）；系统看到答错就更可能出简单题（A₁ 依赖 L₁）；学生能力 U 既影响答对与否，也影响最终的学习增益 Y。这就是右边的图。</p>
+      <p>要估计的是 <span class="m">E[Y<sup>a₀,a₁</sup>]</span>，比如“两步都出难题”和“两步都出简单题”的差。注意数据来自一个<b>序贯随机试验</b>（A₀ 抛硬币，A₁ 只依赖 L₁），所以序贯可交换性成立，这个效应是<b>可以识别的</b>。问题只在于用什么方法。</p>
+    </div>
+    <div class="stack">
+      <div id="fbDag"></div>
+      <div class="row" style="justify-content:center"><span class="small muted">调整 L₁ 时高亮被打开的路径：</span><button class="btn" id="hl_no">不调整</button><button class="btn on" id="hl_yes">调整</button></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s202" data-short="传统方法失效"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">20.2–20.3</span><h2>传统方法为什么失效</h2></div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>估计“两步都难 − 两步都易”</h3></div>
+    <p class="small muted" style="margin-bottom:10px">数据由日志策略产生：A₀ 以 50% 出难题；第 1 步答对后以概率 s 出难题，答错后以概率 1 − s 出难题。所有数字按模型精确计算（相当于无限多学生），没有抽样误差。</p>
+    <div class="row" style="margin-bottom:10px">
+      <span class="small muted">真实世界：</span><button class="btn on" id="w_real">选题真的有效果（同第 19 章）</button><button class="btn" id="w_null">选题对学习完全没效果</button>
+      <label class="ctrl"><span>日志策略对 L₁ 的依赖 s <output id="o_s"></output></span><input type="range" id="s_s" min="0.5" max="0.95" step="0.05" value="0.8"></label>
+    </div>
+    <div class="two">
+      <div class="bars" id="fbBars"></div>
+      <div class="tbl-wrap"><table id="cellTbl"></table></div>
+    </div>
+    <div class="verdict" style="margin-top:10px" id="fbVerdict"></div>
+  </div>
+  <div class="prose" style="margin-top:18px">
+    <p>20.3 节的解释，对着图看：</p>
+    <p><b>不调整 L₁</b>（直接比较两组的平均 Y，或者回归 Y ~ A₀ + A₁）：A₁ 的分配依赖 L₁，L₁ 又和 U 相关，U 影响 Y，所以 <span class="m">A₁ ← L₁ ← U → Y</span> 是一条开着的后门路径，A₁ 的效应被混杂。</p>
+    <p><b>调整 L₁</b>（分层，或回归 Y ~ A₀ + A₁ + L₁）：对 A₁ 来说混杂关上了，但对 A₀ 来说出了两个问题。一是 A₀ 有一部分效应是经过 L₁ 传递的，调整 L₁ 把它挡住了；二是 L₁ 是 A₀ 和 U 的共同结果（对撞点），调整它打开了 <span class="m">A₀ → L₁ ← U → Y</span>。</p>
+    <p>切到“选题对学习完全没效果”：真实效应是 0，没有任何效应可以被“挡住”，但对撞路径仍然存在，调整 L₁ 的方法照样给出非零的答案。<b>这是书里最重要的一个反例：传统方法在零假设下都可能出错。</b></p>
+  </div>
+</div></section>
+
+<section class="ch" id="s204" data-short="修不好"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">20.4–20.5</span><h2>为什么传统方法修不好，以及过去的处理也要调整</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>20.4 节：能不能换一种回归设定来补救？书里的回答是不能。只要有处理—混杂反馈，任何一个“把 Y 对处理史和 L 史做回归、读出处理系数”的方法，都面对同样的两难。这不是模型设定问题，而是结构问题。解决办法是换方法：g 公式、IP 加权、G 估计都不靠“把 L 放进结局回归”来调整混杂。</p>
+      <p>20.5 节：即使没有反馈，估计后面某一步处理的效应时，也要调整<b>之前的处理</b>，因为之前的处理既影响之后的处理（谁会被继续治疗），也影响结局。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 为什么你的估计目标是“一步偏离”</div>
+      <p>你的场景里反馈无处不在：第 t 步选的技能影响第 t+1 步的作答，作答进入 h<sub>t+1</sub>，日志策略据此选下一题，作答也和最终的学习增益相关。如果有人想用“最终 NLG 对每一步选题做回归、调整作答历史”的办法来评估一个策略，就会掉进本章的陷阱。</p>
+      <p>你的单步 DR 绕开了这个问题：它只在<b>一个</b>决策点上换成 π，以 h<sub>t</sub> 为条件，之后都按 μ 走，所以不需要处理 π 之后又引起的反馈。代价是估计目标变成了 V<sup>1SD</sup>(π)，而不是全程部署的 V(π)。这是一个合理的取舍，论文里已经说清楚了；第 21 章的实验台会让你看到两者可以差多少。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：时变处理的 g 方法</b>同一份数据，g 公式和 IP 加权都能给出正确答案。再看全程部署 V(π) 和一步偏离 V¹ˢᴰ(π) 的区别。</div>
+</div></section>
+</main>
+
+<script>
+/* 与第 19 章相同的两步模型 */
+const PU=.5;const pL1=(a0,u)=>u?(a0?.6:.9):(a0?.2:.7);
+const EYreal=(a0,a1,l1,u)=>.20+.10*u+(a0?(u?.10:-.05):0)+(l1?(a1?.18:.04):(a1?-.06:.08));
+const EYnull=(a0,a1,l1,u)=>.20+.20*u;
+let nullW=false;const EYm=(...x)=>(nullW?EYnull:EYreal)(...x);
+function analyze(s){
+  const pA1=l1=>l1?s:1-s;const C={};
+  for(const a0 of[0,1])for(const l1 of[0,1])for(const a1 of[0,1]){let p=0,num=0;for(const u of[0,1]){const pu=u?PU:1-PU;const pl=l1?pL1(a0,u):1-pL1(a0,u);const w=pu*.5*pl*(a1?pA1(l1):1-pA1(l1));p+=w;num+=w*EYm(a0,a1,l1,u)}C[a0+''+l1+''+a1]={p,ey:num/p}}
+  const truth=(a0,a1)=>{let v=0;for(const u of[0,1]){const pu=u?PU:1-PU;for(const l1 of[0,1]){v+=pu*(l1?pL1(a0,u):1-pL1(a0,u))*EYm(a0,a1,l1,u)}}return v};
+  const eyA=(a0,a1)=>{let p=0,n=0;for(const l1 of[0,1]){const c=C[a0+''+l1+''+a1];p+=c.p;n+=c.p*c.ey}return n/p};
+  const pl1=l1=>[0,1].reduce((s0,a0)=>s0+[0,1].reduce((s1,a1)=>s1+C[a0+''+l1+''+a1].p,0),0);
+  const pl1g=(l1,a0)=>{let v=0;for(const u of[0,1])v+=(u?PU:1-PU)*(l1?pL1(a0,u):1-pL1(a0,u));return v};
+  const keys=Object.keys(C);const X1=keys.map(k=>[1,+k[0],+k[2],+k[1]]),X0=keys.map(k=>[1,+k[0],+k[2]]),y=keys.map(k=>C[k].ey),w=keys.map(k=>C[k].p);
+  const b1=linreg(X1,y,w),b0=linreg(X0,y,w);
+  const strat=[0,1].reduce((s0,l1)=>s0+pl1(l1)*(C['1'+l1+'1'].ey-C['0'+l1+'0'].ey),0);
+  const gf=[0,1].reduce((s0,l1)=>s0+C['1'+l1+'1'].ey*pl1g(l1,1)-C['0'+l1+'0'].ey*pl1g(l1,0),0);
+  return{C,truth:truth(1,1)-truth(0,0),naive:eyA(1,1)-eyA(0,0),regNoL:b0[1]+b0[2],regL:b1[1]+b1[2],strat,gf}}
+function drawFB(){
+  const s=+$('#s_s').value;$('#o_s').textContent=s.toFixed(2);const R=analyze(s);
+  barList($('#fbBars'),[['真实效应',R.truth,'--muted'],['直接比较',R.naive,'--w1'],['回归 Y ~ A₀ + A₁',R.regNoL,'--w1'],['回归 Y ~ A₀ + A₁ + L₁',R.regL,'--w1'],['按 L₁ 分层再平均',R.strat,'--w1'],['g 公式（第 21 章）',R.gf,'--accent']],{min:-.15,max:.15,fmt:v=>fmt(v,3)});
+  $('#cellTbl').innerHTML='<thead><tr><th>A₀</th><th>L₁</th><th>A₁</th><th>比例</th><th>平均 Y</th></tr></thead><tbody>'+Object.keys(R.C).map(k=>`<tr><td class="num">${k[0]}</td><td class="num">${k[1]}</td><td class="num">${k[2]}</td><td class="num">${R.C[k].p.toFixed(3)}</td><td class="num">${R.C[k].ey.toFixed(3)}</td></tr>`).join('')+'</tbody>';
+  const bad=[R.naive,R.regNoL,R.regL,R.strat].filter(v=>Math.abs(v-R.truth)>.003).length;
+  $('#fbVerdict').innerHTML=`四种传统做法里有 <b>${bad}</b> 种偏离了真值${nullW?'（真值为 0）':''}，只有 g 公式（${fmt(R.gf,3)}）和真值（${fmt(R.truth,3)}）一致。数据就是左边这张 8 格表，现实中你拿到的也只有它。`}
+segmented(['w_real','w_null'],id=>{nullW=id==='w_null';drawFB()});$('#s_s').oninput=drawFB;drawFB();
+
+/* 因果图 */
+let hlOn=true;
+function drawFbDag(){const cls=e=>hlOn&&['A0L1','UL1','UY'].includes(e)?'hl':(!hlOn&&['L1A1','UL1','UY'].includes(e)?'hl':'');
+  dag($('#fbDag'),{w:520,h:160,label:'处理—混杂反馈',nodes:[{id:'A0',x:50,y:120,t:'A₀ 第0步选题',cls:'a'},{id:'L1',x:200,y:120,t:'L₁ 答对',cls:hlOn?'cond':''},{id:'A1',x:330,y:120,t:'A₁ 第1步',cls:'a'},{id:'Y',x:465,y:55,t:'Y 增益',cls:'y'},{id:'U',x:250,y:28,t:'U 能力',cls:'hid'}],
+    edges:[['A0','L1',cls('A0L1')],['L1','A1',cls('L1A1')],['A1','Y'],['U','L1',cls('UL1')],['U','Y',cls('UY')],['A0','Y']]})}
+segmented(['hl_no','hl_yes'],id=>{hlOn=id==='hl_yes';drawFbDag()});drawFbDag();
+
+quiz($('#quizBox'),[
+ {q:'处理—混杂反馈指的是：',o:['L 只影响结局','之前的处理影响 L，L 又影响之后的处理和结局','处理只有一次'],a:1,w:'A₀ → L₁ → A₁，同时 L₁ 与 Y 有共同原因。'},
+ {q:'回归 Y ~ A₀ + A₁ + L₁ 估计“一直难 − 一直易”为什么错？',o:['L₁ 是 A₀ 和 U 的对撞点，并且挡住了 A₀ 经过 L₁ 的效应','样本太小','L₁ 测量有误'],a:0,w:'调整 L₁ 打开 A₀ → L₁ ← U → Y。'},
+ {q:'在真实效应为零时，调整 L₁ 的回归：',o:['一定给出 0','仍可能给出非零值','给出负值'],a:1,w:'对撞路径在零假设下也存在。'},
+ {q:'这份数据里的效应能不能被识别？',o:['不能，因为 U 没测量','能，因为数据来自序贯随机试验，g 公式不需要 U','只能识别 A₁ 的效应'],a:1,w:'A₀ 随机、A₁ 只依赖 L₁，序贯可交换性成立。'},
+ {q:'你论文的单步 DR 为什么不受这一章的问题影响？',o:['因为用了神经网络','因为它只在一个决策点上换成 π，之后按 μ 走，估计目标是 V¹ˢᴰ','因为用了交叉拟合'],a:1,w:'代价是估计目标不是全程部署值 V(π)。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 10 章 随机变异 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="10">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 10 章 · 第二轮</div>
+    <h1>随机变异</h1>
+    <p class="lead">前九章都假设数据无限多，只问“能不能识别”。这一章回到有限样本：估计值会晃，要用置信区间表达不确定性。书里还提出两个值得深思的问题：我们的人群真的是从某个“超总体”里抽出来的吗？随机试验里碰巧不平衡的协变量要不要调整？最后，变量一多，分层就会遇到<b>维度灾难</b>，这就是第 II 部分要引入模型的原因。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">三个层次</div>
+    <p class="small"><b>估计目标</b> estimand：想知道的那个数，如 Pr[Y<sup>a=1</sup>=1] − Pr[Y<sup>a=0</sup>=1]。</p>
+    <p class="small"><b>估计量</b> estimator：从数据算它的方法，如样本比例之差。</p>
+    <p class="small"><b>估计值</b> estimate：用手上这份数据算出来的那个数。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s101" data-short="置信区间"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">10.1–10.2</span><h2>识别 vs 估计，以及置信区间到底保证什么</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>识别问题：如果数据无限多，估计目标能不能用数据的分布表示出来（需要可交换性、正性、一致性）。估计问题：数据有限时，估计量离估计目标有多远。</p>
+      <p>一个好的估计量至少应该是<b>相合的</b>（consistent）：样本越大，估计值越可能接近真值。注意这里的“相合”是统计概念，和第 1 章的“一致性”（consistency）不是一回事，中英文都容易混。</p>
+      <p>95% 置信区间的含义：<b>如果反复做同样的研究</b>，每次都按同样的方法算区间，长期来看有 95% 的区间会盖住真值。它不是“真值有 95% 的概率落在这一个区间里”。右边可以亲眼看这个“长期频率”。</p>
+      <div class="formula">风险差的 Wald 区间：(p̂₁ − p̂₀) ± 1.96 · √(p̂₁(1−p̂₁)/n₁ + p̂₀(1−p̂₀)/n₀)</div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>做 100 次同样的随机试验</h3></div>
+      <p class="small muted">真实风险：处理组 0.30，对照组 0.40，真实风险差 −0.10。每次每组 n 人。</p>
+      <div class="row">
+        <label class="ctrl">每组 n <select id="ci_n"><option>30</option><option selected>100</option><option>500</option></select></label>
+        <button class="btn" id="ci_go">再做 100 次</button>
+      </div>
+      <canvas id="ciCv" height="300" aria-label="100 个置信区间"></canvas>
+      <p class="small" id="ciNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s103" data-short="超总体"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">10.3</span><h2>超总体的神话：随机性到底从哪来</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>第 1 章的 20 位神不是从什么更大的神群里抽出来的。他们就是我们关心的全部。那还有“抽样误差”吗？</p>
+      <p>书里区分两种视角。<b>超总体视角</b>：把研究对象看作从一个无限大的人群中随机抽出的样本，置信区间描述的是抽样带来的不确定性。<b>随机化视角</b>（Fisher、Neyman）：人群是固定的，唯一的随机性来自<b>处理的随机分配</b>。在尖锐零假设下，每个人的结局不受处理影响，我们可以把所有可能的分配都列出来，看观察到的差异有多“极端”。这就是<b>随机化检验</b>（置换检验）。</p>
+      <p>书里的立场：超总体是一个方便但常常不真实的假设，需要意识到自己在用它。</p>
+      <div class="paperlink"><div class="t">放到你的论文里 · 你的 n = 20 是什么样本</div><p>配对检验用的是 20 个“种子 × 数据集”单元。5 个种子可以看作从“所有可能的随机初始化”里抽出来的，这是合理的超总体。但 4 个数据集是你<b>挑选</b>的，不是随机抽的。把数据集当作独立抽样单元，相当于假装存在一个“数据集的超总体”。更稳妥的说法是：结论针对这 4 个数据集，种子带来的变异才是统计推断的对象；或者在每个数据集内单独检验。</p><p>另一层随机性是每个测试集的 300 个模拟学生，它在你“先在数据集内平均、再在种子间算标准差”的做法里被吸收进了种子间的变异。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>对表 1.2 做随机化检验</h3></div>
+      <p class="small muted">20 位神，13 位移植，观察到风险差 7/13 − 3/7 = 0.110。在尖锐零假设下（移植对谁都没效应），每位神的 Y 固定不变，把“谁是那 13 位”重新随机抽很多次。</p>
+      <div class="row"><button class="btn" id="perm_go">再抽 5000 次</button></div>
+      <canvas id="permCv" height="190" aria-label="置换分布"></canvas>
+      <p class="small" id="permNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s104" data-short="条件性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">10.4</span><h2>随机试验里，碰巧不平衡要不要调整</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>随机化保证的是<b>平均来说</b>两组可交换。在某一次具体的试验里，重病的人可能碰巧大多分到了处理组。这时不调整的估计量在“所有可能的分配”上平均是无偏的，但在<b>这一次</b>的分配下是偏的。</p>
+      <p>书里讨论的“条件性原则”主张：推断应该以实际观察到的情况为条件。既然已经看到了不平衡，就应该调整 L。这是随机试验里也常常调整基线协变量的理由之一，它还能提高精度。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>不平衡程度 vs 估计误差</h3></div>
+      <p class="small muted">每次试验 200 人，L（重病）强烈影响结局，处理真实效应 = −0.10。横轴：处理组比对照组多出的重病比例；纵轴：估计误差。</p>
+      <canvas id="condCv" height="220" aria-label="不平衡和估计误差的散点"></canvas>
+      <div class="legend"><span><i style="background:var(--w1)"></i>不调整</span><span><i style="background:var(--accent)"></i>按 L 标准化</span></div>
+      <p class="small" id="condNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s105" data-short="维度灾难"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">10.5</span><h2>维度灾难：为什么第 II 部分需要模型</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>分层和标准化需要在 L 的每一层里都有处理组和对照组的人。L 只有 1 个二分变量时是 2 层；10 个二分变量就是 1024 层；20 个就是一百多万层。样本量不变，大多数层会是空的，或者只有一种处理。这时“非参数地”分层就不可能了，只能借助模型：假设相邻的层长得差不多，用参数把信息“借”过来。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>你的 L 是整个答题历史 h<sub>t</sub>，可能的取值是天文数字。μ̂ 和 q̂ 必须是模型（你用的是平滑的倾向模型和结局模型）。第 II 部分的每一章都在讲：用了模型以后，结论多依赖模型设定。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 4</span><h3>协变量一多，分层就失效</h3></div>
+      <p class="small muted">n = 2000 人，k 个二分协变量，处理概率 0.5。</p>
+      <label class="ctrl"><span>二分协变量个数 k <output id="o_k"></output></span><input type="range" id="s_k" min="1" max="20" step="1" value="6"></label>
+      <div class="stats" id="kStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>Holm 校正是对哪几个检验做的？</summary><p>需要在论文里明确列出检验族：比如主假设 H1（AUC 非劣）和 H2（NLG 更好）以及几个关键的次要比较。Holm 校正控制的是这个族内的族错误率，族的范围一变，校正后的 p 值就变。论文里 ECE 的升高在 Holm 校正后不显著（p = 0.16），NLG 的差距仍显著（p = 3.3×10⁻⁴）。</p></details>
+  <details><summary>为什么同时报 Wilcoxon、t 检验和 bootstrap？</summary><p>n = 20 时，t 检验依赖近似正态，Wilcoxon 不依赖分布但检验的是中位数方向，bootstrap 给出区间。三者结论一致说明结果不依赖某个特定方法。从本章的角度，Wilcoxon 符号秩检验本质上是一种随机化检验：在“两种方法没有差别”的零假设下，每个单元的差值符号是可以随机翻转的。</p></details>
+  <div class="callout" style="margin-top:18px"><b>第 I 部分结束。下一章：为什么需要模型</b>第 II 部分从这里开始：当 L 维度太高，必须用模型，书用一个真实数据集（NHEFS）贯穿第 12–17 章。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1：置信区间覆盖率 ---------- */
+let CI=[],ciSeed=1;
+function runCI(){const n=+$('#ci_n').value;const r=rng(ciSeed++*31+7);CI=[];
+  for(let k=0;k<100;k++){let d1=0,d0=0;for(let i=0;i<n;i++){if(r()<.3)d1++;if(r()<.4)d0++}const p1=d1/n,p0=d0/n;const se=Math.sqrt(p1*(1-p1)/n+p0*(1-p0)/n);CI.push([p1-p0-1.96*se,p1-p0+1.96*se,p1-p0])}drawCI()}
+function drawCI(){const cv=$('#ciCv');const{c,w,h}=setupCanvas(cv);c.clearRect(0,0,w,h);
+  const lo=-.5,hi=.3,L=10,R=w-10,T=6,B=h-22;const X=v=>L+(v-lo)/(hi-lo)*(R-L);
+  c.strokeStyle=css('--line');c.beginPath();c.moveTo(L,B+.5);c.lineTo(R,B+.5);c.stroke();
+  c.fillStyle=css('--muted');c.font='11px '+css('--f-mono');c.textAlign='center';[-.4,-.2,0,.2].forEach(t=>c.fillText(fmt(t,1),X(t),h-6));
+  let miss=0;const rowH=(B-T)/CI.length;
+  CI.forEach(([a,b,m],i)=>{const cover=a<=-.1&&b>=-.1;if(!cover)miss++;const y=T+i*rowH+rowH/2;c.strokeStyle=css(cover?'--muted':'--w1');c.lineWidth=cover?1.2:2;c.beginPath();c.moveTo(X(Math.max(lo,a)),y);c.lineTo(X(Math.min(hi,b)),y);c.stroke()});
+  c.strokeStyle=css('--accent');c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.moveTo(X(-.1),T);c.lineTo(X(-.1),B);c.stroke();c.setLineDash([]);
+  $('#ciNote').innerHTML=`这 100 个区间里，有 <b>${100-miss}</b> 个盖住了真值 −0.10（红色是没盖住的）。n 变大，区间变窄，但盖住的比例始终在 95 左右。`}
+$('#ci_go').onclick=runCI;$('#ci_n').onchange=runCI;runCI();onRedraw(drawCI);
+
+/* ---------- 实验台 2：随机化检验 ---------- */
+const Y12=[0,1,0,0,0,0,0,1,1,1,0,1,1,1,1,1,1,0,0,0];const obs=7/13-3/7;let perm=[],permSeed=3;
+function runPerm(){const r=rng(permSeed++*101);for(let k=0;k<5000;k++){const idx=[...Array(20).keys()];for(let i=19;i>0;i--){const j=Math.floor(r()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}
+  let d1=0;for(let i=0;i<13;i++)d1+=Y12[idx[i]];const d0=10-d1;perm.push(d1/13-d0/7)}drawPerm()}
+function drawPerm(){histogram($('#permCv'),perm,{lo:-.8,hi:.8,bins:40,ticks:[-.8,-.4,0,.4,.8],line:obs,lineLabel:'观察值 0.110'});
+  const p=perm.filter(v=>Math.abs(v)>=obs-1e-9).length/perm.length;
+  $('#permNote').innerHTML=`已抽 ${perm.length} 种分配。双侧 p 值 ≈ <b>${p.toFixed(2)}</b>：在“移植对谁都没效应”的假设下，这么大（或更大）的差异经常出现。其实 13 人里死 7 人正是零假设下最可能的结果之一（期望是 6.5 人）。这里的随机性<b>只</b>来自谁被分到移植组，没有用到任何超总体。`}
+$('#perm_go').onclick=runPerm;runPerm();onRedraw(drawPerm);
+
+/* ---------- 实验台 3：条件性 ---------- */
+function drawCond(){const r=rng(104);const pts=[];let su=0,ss=0,cnt=0,bigU=[],bigS=[];
+  for(let k=0;k<300;k++){const rows=[];for(let i=0;i<200;i++){const L=r()<.4?1:0;const a=r()<.5?1:0;const y=r()<(L?.7:.2)-.1*a?1:0;rows.push([L,a,y])}
+    const T=rows.filter(x=>x[1]),C=rows.filter(x=>!x[1]);const imb=T.filter(x=>x[0]).length/T.length-C.filter(x=>x[0]).length/C.length;
+    const rate=g=>g.length?g.filter(x=>x[2]).length/g.length:0;const un=rate(T)-rate(C);
+    const pL=rows.filter(x=>x[0]).length/200;const st=(1-pL)*(rate(T.filter(x=>!x[0]))-rate(C.filter(x=>!x[0])))+pL*(rate(T.filter(x=>x[0]))-rate(C.filter(x=>x[0])));
+    pts.push({x:imb,y:un+.1,color:'--w1'},{x:imb,y:st+.1,color:'--accent'});if(Math.abs(imb)>.1){bigU.push(un+.1);bigS.push(st+.1)}}
+  scatter($('#condCv'),pts,{xlo:-.25,xhi:.25,ylo:-.25,yhi:.25,xticks:[-.2,-.1,0,.1,.2],yticks:[-.2,-.1,0,.1,.2],xlabel:'重病比例差（处理 − 对照）',r:2.5,alpha:.6});
+  $('#condNote').innerHTML=`红点（不调整）沿一条斜线分布：不平衡越大，误差越大。绿点（按 L 标准化）始终围着 0。在不平衡超过 0.1 的 ${bigU.length} 次试验里，不调整的误差绝对值平均 <b>${bigU.length?mean(bigU.map(Math.abs)).toFixed(3):'—'}</b>，标准化后是 <b>${bigS.length?mean(bigS.map(Math.abs)).toFixed(3):'—'}</b>。`}
+drawCond();onRedraw(drawCond);
+
+/* ---------- 实验台 4：维度灾难 ---------- */
+function drawK(){const k=+$('#s_k').value;$('#o_k').textContent=k;const r=rng(105);const cells=new Map();
+  for(let i=0;i<2000;i++){let key=0;for(let j=0;j<k;j++)if(r()<.5)key|=(1<<j);const a=r()<.5?1:0;const c=cells.get(key)||[0,0];c[a]++;cells.set(key,c)}
+  const total=2**k;const both=[...cells.values()].filter(c=>c[0]&&c[1]);const inBoth=both.reduce((s,c)=>s+c[0]+c[1],0);
+  $('#kStats').innerHTML=`<div class="stat"><div class="k">理论上的层数</div><div class="v">${total.toLocaleString()}</div></div><div class="stat"><div class="k">样本里出现的层</div><div class="v">${cells.size.toLocaleString()}</div></div>
+   <div class="stat"><div class="k">两种处理都有人的层</div><div class="v">${both.length.toLocaleString()}</div></div><div class="stat"><div class="k">能用于分层比较的人</div><div class="v">${(inBoth/20).toFixed(0)}%</div></div>`}
+$('#s_k').oninput=drawK;drawK();
+
+quiz($('#quizBox'),[
+ {q:'95% 置信区间的正确理解是：',o:['真值有 95% 的概率在这个区间里','反复研究时，95% 的区间会盖住真值','样本里 95% 的人在区间里'],a:1,w:'频率学派的区间描述的是方法的长期覆盖率。'},
+ {q:'随机化检验里的随机性来自：',o:['从超总体抽样','处理的随机分配','测量误差'],a:1,w:'人群固定，只有分配是随机的。'},
+ {q:'随机试验里重病者碰巧多分到处理组，调整 L：',o:['没必要，随机化已经保证无偏','合理，可以减少这次试验的条件偏差并提高精度','会引入偏倚'],a:1,w:'条件性原则：以观察到的不平衡为条件进行推断。'},
+ {q:'论文里把 4 个数据集当作配对检验的独立单元，可能的问题是：',o:['数据集不是随机抽取的，“数据集的超总体”是虚构的','数据集太少，无法计算','数据集之间没有差异'],a:0,w:'可以把推断限定在种子带来的变异上，或在数据集内分别检验。'},
+ {q:'维度灾难意味着：',o:['需要用模型在层之间借用信息','应该删掉协变量','因果效应不存在'],a:0,w:'这是第 II 部分引入模型的原因。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

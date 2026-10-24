@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 12 章 IP 加权与边际结构模型 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="12">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 12 章 · 必读</div>
+    <h1>IP 加权与边际结构模型</h1>
+    <p class="lead">第 2 章的 IP 加权在 L 很多的时候怎么做？用一个模型（通常是逻辑回归）估计每个人接受其实际处理的概率，取倒数当权重，再在加权后的伪总体里拟合一个<b>边际结构模型</b>。书从这一章开始用一个真实数据集 NHEFS：戒烟对 10 年体重变化的影响。你论文里的 IPS、SNIPS、权重截断，全是这一章的内容。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">这一章的公式</div>
+    <div class="formula">W = 1 / f(A|L) <span class="c">非稳定权重</span></div>
+    <div class="formula">SW = f(A) / f(A|L) <span class="c">稳定权重，均值应 ≈ 1</span></div>
+    <div class="formula">E[Y<sup>a</sup>] = β₀ + β₁a <span class="c">边际结构模型</span></div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s121" data-short="NHEFS"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">12.1–12.2</span><h2>因果问题和用模型估计权重</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>NHEFS</b>（美国国家健康和营养调查的随访研究）：1566 名吸烟者，1971–75 年基线调查，1982 年随访。处理 A = 期间是否戒烟（403 人戒了，1163 人没戒）；结局 Y = 1971 到 1982 年的体重变化（公斤）。</p>
+      <p>直接比较：戒烟者平均增重约 4.5 公斤，没戒的约 2.0 公斤，差约 2.5 公斤。但戒烟的人和没戒的人本来就不同：年龄、性别、烟瘾、基线体重、运动习惯都不一样。书里调整了 9 个基线变量 L（性别、年龄、种族、教育、吸烟强度、吸烟年数、日常活动、锻炼、基线体重）。</p>
+      <p>做法：用逻辑回归拟合 <span class="m">Pr[A=1|L]</span>（连续变量加了平方项），每个人的权重是 <span class="m">1 / Pr[A=a<sub>i</sub>|L<sub>i</sub>]</span>。然后在伪总体里比较两组的平均体重变化。书里得到的 IP 加权估计约为 <b>3.4 公斤</b>，比直接比较的 2.5 公斤大。置信区间要用 bootstrap 或稳健方差，因为权重本身是估计出来的。</p>
+      <p>右边的实验台用<b>模拟的</b>、结构类似 NHEFS 的数据，真实效应设为 3.4 公斤。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>模拟 NHEFS：用不同的处理模型做 IP 加权</h3></div>
+      <p class="small muted">1566 人。年龄、基线体重、每天吸烟支数影响是否戒烟，也影响体重变化。年龄对戒烟的作用是 U 形的（年轻和年长的人都更容易戒）。</p>
+      <div class="row">
+        <span class="small muted">处理模型：</span>
+        <button class="btn on" id="m_good">含年龄平方项（正确）</button>
+        <button class="btn" id="m_bad">只有线性项（误设）</button>
+      </div>
+      <div class="bars" id="nhBars"></div>
+      <div class="stats" id="nhStats"></div>
+      <canvas id="wCv" height="160" aria-label="IP 权重的分布"></canvas>
+      <p class="small muted">上图：非稳定权重的分布（对数刻度的横轴：log₁₀ W）。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s123" data-short="稳定权重"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">12.3</span><h2>稳定权重：同样的答案，更小的波动</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>非稳定权重 <span class="m">W = 1/f(A|L)</span> 造出的伪总体是原来的两倍大（每人在两个世界各出现一次），权重的平均值约为 2。<b>稳定权重</b> <span class="m">SW = f(A)/f(A|L)</span> 在分子上乘以处理的边际概率，伪总体和原样本一样大，权重平均值应约为 1。</p>
+      <p>两个好处：第一，对饱和的边际结构模型，两种权重给出同样的点估计；对非饱和模型（比如连续剂量），稳定权重的置信区间通常更窄。第二，<b>SW 的平均值是一个诊断</b>：如果明显偏离 1，说明处理模型误设或正性接近违反。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里 · IPS、SNIPS 和一个你可以加的诊断</div>
+        <p><b>IPS</b> 就是 Horvitz–Thompson 形式的 IP 加权：<span class="m">(1/N) Σ w<sub>t</sub> r<sub>t</sub></span>，<span class="m">w<sub>t</sub> = π/μ̂</span>。<b>SNIPS</b> 把分母换成权重之和 <span class="m">Σ w<sub>t</sub></span>，叫自归一化（Hajek）估计，作用和稳定权重类似：用一点偏差换方差的大幅下降。</p>
+        <p>诊断：如果 μ̂ 正确且没有截断，<span class="m">E<sub>μ</sub>[π/μ] = Σ<sub>a</sub> μ(a)·π(a)/μ(a) = 1</span>，权重的样本平均应接近 1。建议在论文附录里按数据集、按方法报告 <span class="m">mean(w<sub>t</sub>)</span> 和截断比例。被优化的 Safe-DFKT 策略如果平均权重明显小于 1，就说明它大量选择了日志策略很少选的动作，截断在起作用。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>IPS、SNIPS、截断 IPS：200 次重复</h3></div>
+      <p class="small muted">一个和你的场景同构的玩具：12 个技能，日志策略 μ 偏好前几号技能；目标策略 π 是把 μ 往后几号技能倾斜（倾斜越多，越常选 μ 很少选的动作，正性越差）。每次 2000 条日志，μ̂ 用按能力分段的平滑频率估计。</p>
+      <label class="ctrl"><span>π 偏离 μ 的程度 <output id="o_shift"></output></span><input type="range" id="s_shift" min="0" max="5" step="0.25" value="3.5"></label>
+      <label class="ctrl"><span>截断上限 <output id="o_cl"></output></span><input type="range" id="s_cl" min="2" max="100" step="1" value="20"></label>
+      <div class="row"><span class="small muted">日志策略：</span><button class="btn on" id="mu_known">已知（像模拟器）</button><button class="btn" id="mu_est">从日志估计 μ̂（分 5 段）</button></div>
+      <div class="tbl-wrap"><table id="opeTbl"></table></div>
+      <p class="small" id="opeNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s124" data-short="边际结构模型"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">12.4–12.6</span><h2>边际结构模型、效应修饰和删失</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>边际结构模型</b>（MSM）：<span class="m">E[Y<sup>a</sup>] = β₀ + β₁a</span>。“边际”是说它不以 L 为条件，描述的是整个人群；“结构”是说它是关于潜在结果的模型（因果模型），不是关于观察数据的。在 IP 加权的伪总体里拟合普通回归 Y ~ A，得到的 β₁ 就是因果效应。</p>
+      <p>处理是连续的（比如吸烟量的变化）时也能用，但 f(A|L) 要用概率<b>密度</b>，通常假设正态。书里提醒：连续处理的 IP 权重对密度模型的设定非常敏感，很容易出现极端权重。</p>
+      <p><b>12.5 效应修饰</b>：想知道效应在不同 V 层里是否不同，可以拟合 <span class="m">E[Y<sup>a</sup>|V] = β₀ + β₁a + β₂Va + β₃V</span>，权重的分子可以用 f(A|V)。V 必须是 L 的一部分。</p>
+      <p><b>12.6 删失</b>：NHEFS 里有 63 人 1982 年的体重缺失。用第 8 章的删失权重 <span class="m">1/Pr[C=0|A,L]</span> 乘上处理权重，就同时调整了混杂和选择偏倚。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 你的“处理”是连续的吗</div>
+      <p>你的动作 k 是离散的（12 到 681 个技能），所以权重用的是概率，不是密度，这比连续处理稳定得多。但技能数一大（Junyi 681 个），每个动作的 μ 都很小，π/μ 很容易非常大，问题和连续处理类似。这也解释了为什么离线评估文献在大动作空间下要用截断、自归一化或结构化的动作嵌入。</p>
+      <p>另外，你的 DR 只对第 t 步做一次加权（单步）。如果要估计全程部署的价值，权重是 60 步比值的<b>乘积</b>，方差会指数级增长，这是第 21 章的内容。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：标准化与参数 g 公式</b>IP 加权建模的是“谁接受处理”；标准化建模的是“结局怎么依赖处理和 L”。两者结合就是你用的双重稳健估计。</div>
+</div></section>
+</main>
+
+<script>
+/* 逻辑回归（牛顿法） */
+function logitFit(X,y,it=30){const p=X[0].length;let b=Array(p).fill(0);
+  for(let s=0;s<it;s++){const g=Array(p).fill(0),H=Array.from({length:p},()=>Array(p).fill(0));
+    for(let i=0;i<X.length;i++){const z=X[i].reduce((a,v,j)=>a+v*b[j],0);const m=expit(z);const d=y[i]-m,w=m*(1-m);for(let j=0;j<p;j++){g[j]+=X[i][j]*d;for(let k=0;k<p;k++)H[j][k]+=w*X[i][j]*X[i][k]}}
+    for(let j=0;j<p;j++)H[j][j]+=1e-6;const M=H.map((row,i)=>[...row,g[i]]);
+    for(let c=0;c<p;c++){let m=c;for(let r=c+1;r<p;r++)if(Math.abs(M[r][c])>Math.abs(M[m][c]))m=r;[M[c],M[m]]=[M[m],M[c]];for(let r=0;r<p;r++)if(r!==c){const f=M[r][c]/M[c][c];for(let k=c;k<=p;k++)M[r][k]-=f*M[c][k]}}
+    const step=M.map((row,i)=>row[p]/row[i]);b=b.map((v,j)=>v+step[j]);if(step.every(x=>Math.abs(x)<1e-8))break}
+  return x=>expit(x.reduce((a,v,j)=>a+v*b[j],0))}
+
+/* ---------- 实验台 1：模拟 NHEFS ---------- */
+const NH=(()=>{const r=rng(1566);const rows=[];for(let i=0;i<1566;i++){const age=25+r()*49;const wt=50+randn(r)*12+20;const cig=Math.max(1,20+randn(r)*10);
+  const za=(age-50)/12;const pa=expit(-1.5+0.5*za+0.9*za*za-0.03*(cig-20)+0.02*(wt-70));const a=r()<pa?1:0;
+  const y=2.6+3.4*a-1.4*za-1.3*za*za-0.06*(wt-70)+0.04*(cig-20)+randn(r)*5;rows.push({age,wt,cig,za,a,y,pa})}return rows})();
+let model='good';
+function drawNH(){
+  const feat=d=>model==='good'?[1,d.za,d.za*d.za,(d.cig-20)/10,(d.wt-70)/10]:[1,d.za,(d.cig-20)/10,(d.wt-70)/10];
+  const ps=logitFit(NH.map(feat),NH.map(d=>d.a));const pA=mean(NH.map(d=>d.a));
+  const W=NH.map(d=>{const p=ps(feat(d));return d.a?1/p:1/(1-p)});const SW=NH.map((d,i)=>W[i]*(d.a?pA:1-pA));
+  const T=NH.filter(d=>d.a),C=NH.filter(d=>!d.a);const naive=mean(T.map(d=>d.y))-mean(C.map(d=>d.y));
+  const ht=a=>NH.reduce((s,d,i)=>s+(d.a===a?W[i]*d.y:0),0)/NH.length;
+  const hj=a=>{let s=0,w=0;NH.forEach((d,i)=>{if(d.a===a){s+=W[i]*d.y;w+=W[i]}});return s/w};
+  barList($('#nhBars'),[['真实效应',3.4,'--muted'],['直接比较',naive,'--w1'],['IP 加权（HT）',ht(1)-ht(0)],['IP 加权（自归一化）',hj(1)-hj(0)]],{min:0,max:6,fmt:v=>v.toFixed(2)+' kg'});
+  $('#nhStats').innerHTML=`<div class="stat"><div class="k">非稳定权重 W 的均值</div><div class="v">${mean(W).toFixed(2)}</div></div><div class="stat"><div class="k">稳定权重 SW 的均值</div><div class="v">${mean(SW).toFixed(2)}</div></div><div class="stat"><div class="k">最大 W</div><div class="v">${Math.max(...W).toFixed(1)}</div></div>`;
+  histogram($('#wCv'),W.map(w=>Math.log10(w)),{lo:0,hi:2,bins:40,ticks:[0,.5,1,1.5,2],td:1});
+}
+segmented(['m_good','m_bad'],id=>{model=id==='m_good'?'good':'bad';drawNH()});drawNH();onRedraw(drawNH);
+
+/* ---------- 实验台 2：IPS / SNIPS / 截断 ---------- */
+let muKnown=true;
+function drawOPE(){
+  const shift=+$('#s_shift').value,clip=+$('#s_cl').value;$('#o_shift').textContent=shift.toFixed(2);$('#o_cl').textContent=clip>=100?'不截断':clip;
+  const K=12;const pref=k=>(k-5.5)/3;
+  // 日志策略偏好小号技能（能力越低越偏）；目标策略 = 日志策略向大号技能倾斜，倾斜越多，正性越差
+  const mu=x=>{const s=[...Array(K).keys()].map(k=>Math.exp(pref(k)*(1.2*x-0.8)));const z=s.reduce((a,b)=>a+b,0);return s.map(v=>v/z)};
+  const pi=x=>{const m=mu(x);const s=m.map((v,k)=>v*Math.exp(shift*pref(k)));const z=s.reduce((a,b)=>a+b,0);return s.map(v=>v/z)};
+  const rew=(x,k)=>expit(.3*x-.2*Math.abs(pref(k)-0.3*x)+.2);
+  let truth=0;{const r=rng(1);for(let i=0;i<4000;i++){const x=randn(r);const p=pi(x);truth+=p.reduce((s,v,k)=>s+v*rew(x,k),0)}truth/=4000}
+  const r=rng(12);const est={ips:[],snips:[],clip:[]};let meanW=[],clipFrac=[];
+  for(let rep=0;rep<200;rep++){const logs=[];for(let i=0;i<2000;i++){const x=randn(r);const m=mu(x);let u=r(),k=0;while(k<K-1&&u>m[k]){u-=m[k];k++}const y=r()<rew(x,k)?1:0;logs.push([x,k,y])}
+    // μ̂：按能力分 5 段的平滑频率
+    const bin=x=>clamp(Math.floor((x+2.5)),0,4);const cnt=Array.from({length:5},()=>Array(K).fill(1));logs.forEach(([x,k])=>cnt[bin(x)][k]++);
+    const muh=(x,k)=>{if(muKnown)return mu(x)[k];const c=cnt[bin(x)];return c[k]/c.reduce((a,b)=>a+b,0)};
+    let s=0,sw=0,sc=0,nc=0;logs.forEach(([x,k,y])=>{const w=pi(x)[k]/muh(x,k);s+=w*y;sw+=w;const wc=Math.min(w,clip);sc+=wc*y;if(w>clip)nc++});
+    est.ips.push(s/2000);est.snips.push(s/sw);est.clip.push(sc/2000);meanW.push(sw/2000);clipFrac.push(nc/2000)}
+  const row=(n,a)=>`<tr><td>${n}</td><td class="num">${fmt(mean(a)-truth,3)}</td><td class="num">${sd(a).toFixed(3)}</td><td class="num">${Math.sqrt((mean(a)-truth)**2+sd(a)**2).toFixed(3)}</td></tr>`;
+  $('#opeTbl').innerHTML=`<thead><tr><th>估计量</th><th>偏差</th><th>标准差</th><th>均方根误差</th></tr></thead><tbody>${row('IPS',est.ips)}${row('SNIPS（自归一化）',est.snips)}${row('截断 IPS',est.clip)}</tbody>`;
+  $('#opeNote').innerHTML=`真实价值 ${truth.toFixed(3)}。权重的平均值 = <b>${mean(meanW).toFixed(2)}</b>（应接近 1），被截断的日志占 ${(mean(clipFrac)*100).toFixed(1)}%。`+(muKnown?'μ 已知时 IPS 无偏，但标准差最大；SNIPS 和截断 IPS 用一点偏差换来更小的波动。注意截断：只截了不到 1% 的日志，偏差却最大，因为被截断的恰恰是目标策略最看重、日志策略最少选的那些动作。你论文里截断在 20，被优化的策略正好最依赖这类动作。':'换成估计的 μ̂ 后，分段太粗，μ̂ 误设，权重均值偏离 1，所有估计量都出现偏差。这就是“权重均值 ≈ 1”这个诊断能抓到的问题。')}
+['s_shift','s_cl'].forEach(id=>$('#'+id).onchange=drawOPE);segmented(['mu_known','mu_est'],id=>{muKnown=id==='mu_known';drawOPE()});['s_shift','s_cl'].forEach(id=>$('#'+id).oninput=()=>{$('#o_shift').textContent=(+$('#s_shift').value).toFixed(2);$('#o_cl').textContent=+$('#s_cl').value>=100?'不截断':$('#s_cl').value});drawOPE();
+
+quiz($('#quizBox'),[
+ {q:'稳定权重 SW = f(A)/f(A|L) 的平均值明显偏离 1，说明：',o:['一切正常','处理模型可能误设，或正性接近违反','效应很大'],a:1,w:'正确模型下 SW 的期望是 1，是一个常用诊断。'},
+ {q:'边际结构模型中的“结构”指：',o:['模型有很多层','它是关于潜在结果 Y^a 的模型','它包含了 L'],a:1,w:'结构模型描述的是因果关系（潜在结果），不是观察数据的关联。'},
+ {q:'论文中的 SNIPS 相比 IPS：',o:['无偏且方差更大','用权重之和归一化，方差更小但有少许偏差','完全相同'],a:1,w:'自归一化（Hajek）估计是有限样本有偏、方差小的版本。'},
+ {q:'目标策略越偏离日志策略：',o:['权重越接近 1','权重越极端，IPS 方差越大','偏差越小'],a:1,w:'这是正性接近违反，和第 3 章的实验台 2 是同一件事。'},
+ {q:'如果 μ̂ 正确且不截断，w = π/μ̂ 的样本平均应该接近：',o:['0','1','动作数 K'],a:1,w:'E_μ[π/μ] = Σ π(a) = 1。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

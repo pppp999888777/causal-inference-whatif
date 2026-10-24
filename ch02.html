@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 2 章 随机试验 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="2">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 2 章 · 必读</div>
+    <h1>随机试验</h1>
+    <p class="lead">第 1 章说关联不等于因果。这一章回答：什么条件下关联就等于因果？答案是<b>可交换性</b>。抛硬币分配处理能自动带来它；按某个变量 L 分层抛硬币，则带来<b>条件可交换性</b>，这时要用标准化或 IP 加权把因果效应算出来。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">这一章的三个公式</div>
+    <div class="formula">Y<sup>a</sup> ⫫ A <span class="c">可交换性</span></div>
+    <div class="formula">Σ<sub>l</sub> Pr[Y=1|L=l,A=a]·Pr[L=l] <span class="c">标准化</span></div>
+    <div class="formula">权重 W = 1 / Pr[A|L] <span class="c">IP 加权</span></div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s21" data-short="随机化"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">2.1</span><h2>随机化：让两组人可以互换</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>设想一个理想的随机试验：每位神抛一枚硬币，正面就移植，反面不移植。没人退出、所有人照分配执行、处理只有一个版本。</p>
+      <p>这时，被分到移植组的那群人和没分到的那群人，除了硬币以外没有系统差别。如果把两组对调，结果不会变。这叫<b>可交换性</b>：</p>
+      <div class="formula">Y<sup>a</sup> ⫫ A，对所有 a <span class="c">潜在结果与实际处理独立</span></div>
+      <p>它的意思是 <span class="m">Pr[Y<sup>a</sup>=1|A=1] = Pr[Y<sup>a</sup>=1|A=0]</span>：处理组“如果不处理”的风险，和对照组“如果不处理”的风险一样。再加上一致性，就得到最重要的一步：</p>
+      <div class="formula">Pr[Y<sup>a</sup>=1] = Pr[Y<sup>a</sup>=1|A=a] = Pr[Y=1|A=a]</div>
+      <p>左边是因果量，右边是能从数据算的关联量。<b>随机化让关联等于因果。</b></p>
+      <div class="callout"><b>容易混淆</b>可交换性是 <span class="m">Y<sup>a</sup> ⫫ A</span>（潜在结果和处理独立），不是 <span class="m">Y ⫫ A</span>（观察结局和处理独立）。后者等于说“没有因果效应”。随机试验里处理有效时，<span class="m">Y</span> 和 <span class="m">A</span> 当然相关。</div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>检查可交换性：用第 1 章那 20 位神</h3></div>
+        <p class="small muted" style="margin-bottom:8px">现实里看不到 Y<sup>a=0</sup>，但这里我们开着上帝视角，可以直接检查“处理组和对照组如果都不移植，死亡率一样吗”。</p>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn on" id="x_book">书中表 1.2 的分配</button>
+          <button class="btn" id="x_coin">抛一次硬币</button>
+          <button class="btn" id="x_sick">医生偏向重病的神</button>
+        </div>
+        <div class="tbl-wrap"><table id="xTbl"></table></div>
+        <div class="verdict" style="margin-top:10px" id="xVerdict"></div>
+      </div>
+      <div class="panel">
+        <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>人越多，抛硬币越管用</h3></div>
+        <p class="small muted" style="margin-bottom:8px">一个超总体：重病（L=1）的人占 60%，不管治不治死亡率都是 2/3；轻症死亡率都是 1/4。所以真实因果风险差 = 0。每次随机抽 n 人、抛硬币分组，算关联风险差。</p>
+        <div class="row" style="margin-bottom:6px">
+          <label class="ctrl">样本量 n <select id="r_n"><option>20</option><option selected>200</option><option>2000</option><option>20000</option></select></label>
+          <button class="btn" id="r_go">做 300 次试验</button>
+        </div>
+        <canvas id="rCv" height="190" aria-label="300 次随机试验的关联风险差分布"></canvas>
+        <p class="small" id="rNote"></p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s22" data-short="条件随机"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">2.2</span><h2>条件随机化：按病情分层抛不同的硬币</h2></div>
+  <div class="prose">
+    <p>书里的表 2.2 给每位神加了一个变量 <span class="m">L</span>：1 = 病情危重，0 = 不危重。研究者设计了两种方案。方案 1：所有人都按 50% 抛硬币（边际随机化）。方案 2：轻症按 50%，重症按 75% 抛硬币（条件随机化）。</p>
+    <p>表 2.2 的数据来自方案 2。重症更容易被移植，而重症本来就更可能死，所以<b>边际</b>可交换性不成立：移植组里重症更多。但在 L 的每一层里，分配仍是抛硬币，所以<b>条件可交换性</b>成立：</p>
+    <div class="formula">Y<sup>a</sup> ⫫ A | L <span class="c">在 L 的每一层里，两组可以互换</span></div>
+    <p>于是每一层内部可以直接比较。轻症层：移植组死亡 1/4，未移植组 1/4；重症层：移植组 6/9 = 2/3，未移植组 2/3。<b>每一层的因果风险比都是 1</b>。可是把两层混在一起直接比（7/13 vs 3/7），就会得出“移植有害”的错误结论。</p>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>书中表 2.2：20 位神的 L、A、Y</h3></div>
+    <div class="row" style="margin-bottom:10px">
+      <span class="small muted">显示：</span>
+      <button class="btn on" id="t_raw">原始数据</button>
+      <button class="btn" id="t_ipw">IP 加权后的伪总体</button>
+    </div>
+    <div class="tbl-wrap"><table id="t22"></table></div>
+    <div class="stats" style="margin-top:12px" id="t22stats"></div>
+  </div>
+</div></section>
+
+<section class="ch" id="s23" data-short="标准化"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">2.3</span><h2>标准化：分层算完，再按人群比例加回去</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>分层结果告诉我们每层的效应，但我们要的是<b>整个人群</b>的 <span class="m">Pr[Y<sup>a</sup>=1]</span>。做法：在每层里用该层处理为 a 的人的死亡率，再按每层在整个人群里的比例加权平均。</p>
+      <div class="formula">Pr[Y<sup>a</sup>=1] = Σ<sub>l</sub> Pr[Y=1 | L=l, A=a] · Pr[L=l]</div>
+      <p>表 2.2 里 <span class="m">Pr[L=1] = 12/20 = 0.6</span>：</p>
+      <div class="formula">Pr[Y<sup>a=1</sup>=1] = 1/4 × 0.4 + 2/3 × 0.6 = 0.5<br>Pr[Y<sup>a=0</sup>=1] = 1/4 × 0.4 + 2/3 × 0.6 = 0.5</div>
+      <p>因果风险比 = 1，和第 1 章用上帝视角表算出来的一样。注意权重用的是<b>整个人群</b>的 L 分布，不是处理组的。这个公式就是后面的“g 公式”最简单的样子（第 13、21 章）。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 4</span><h3>改改各层的数字</h3></div>
+      <div class="row">
+        <label class="ctrl"><span>重症比例 Pr[L=1] <output id="o_pl"></output></span><input type="range" id="s_pl" min="0" max="1" step="0.05" value="0.6"></label>
+      </div>
+      <div class="row">
+        <label class="ctrl"><span>轻症：移植死亡率 <output id="o_a01"></output></span><input type="range" id="s_a01" min="0" max="1" step="0.01" value="0.25"></label>
+        <label class="ctrl"><span>轻症：不移植死亡率 <output id="o_a00"></output></span><input type="range" id="s_a00" min="0" max="1" step="0.01" value="0.25"></label>
+      </div>
+      <div class="row">
+        <label class="ctrl"><span>重症：移植死亡率 <output id="o_a11"></output></span><input type="range" id="s_a11" min="0" max="1" step="0.01" value="0.67"></label>
+        <label class="ctrl"><span>重症：不移植死亡率 <output id="o_a10"></output></span><input type="range" id="s_a10" min="0" max="1" step="0.01" value="0.67"></label>
+      </div>
+      <div class="formula" id="stdFormula"></div>
+      <div class="stats" id="stdStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s24" data-short="IP 加权"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">2.4</span><h2>IP 加权：造一个“人人都被处理过”的伪总体</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>另一种算法：给每个人一个权重，等于他<b>实际得到的处理</b>的概率的倒数，<span class="m">W = 1 / Pr[A=a|L]</span>。</p>
+      <p>表 2.2 里：轻症不管移不移植权重都是 1/0.5 = 2；重症移植的权重是 1/0.75 = 4/3，重症未移植的是 1/0.25 = 4。</p>
+      <p>加权后得到一个 40 人的<b>伪总体</b>：原来 20 位神，每位在“移植世界”和“不移植世界”里各出现一次。在伪总体里 L 和 A 不再相关，所以可以直接比较：移植组死亡 10/20，未移植组 10/20，因果风险比还是 1。</p>
+      <p>直觉：重症里没被移植的人很少（只有 3 位），每一位都要“代表”很多没被观察到的人，所以权重大。</p>
+      <div class="callout"><b>什么时候两种方法给出同一个答案</b>没有模型、L 是离散的时候，标准化和 IP 加权在数学上完全等价（书中技术点 2.3）。有了模型以后，两者依赖的假设不同（第 12、13 章），把两者结合就是双重稳健。</div>
+    </div>
+    <div class="stack">
+      <div class="paperlink">
+        <div class="t">放到你的论文里 · 模拟器的日志就是一个条件随机试验</div>
+        <p>模拟器里，随机日志策略 μ 根据学生当前历史 <span class="m">h<sub>t</sub></span> 选题。这正是“按 L 分层抛硬币”：<span class="m">L = h<sub>t</sub></span>，<span class="m">A = 第 t 步选的技能</span>。μ 是你自己写的，所以条件可交换性 <span class="m">Y<sup>a</sup> ⫫ A | h<sub>t</sub></span> 靠设计就成立。</p>
+        <p>DR 里的权重 <span class="m">w<sub>t</sub> = π(a<sub>t</sub>|h<sub>t</sub>) / μ̂(a<sub>t</sub>|h<sub>t</sub>)</span> 和 2.4 节的 <span class="m">1 / Pr[A|L]</span> 是同一个东西。区别只是目标：书里的目标是“所有人都做 a”，权重是 <span class="m">1[A=a] / Pr[A=a|L]</span>；你的目标是“所有人都按 π 选”，所以分子从 0/1 指示变成了 π 给这个动作的概率。</p>
+      </div>
+      <div class="paperlink">
+        <div class="t">真实日志就没这么好运</div>
+        <p>ASSISTments、EdNet 的日志不是你设计的随机试验，是老师和系统按各种理由选的题。μ 不知道，只能从数据估 μ̂，而且学生的某些特征可能没记录。这就从“随机试验”变成了“观察性研究”，是下一章的内容。这也是论文把真实日志上的 DR 只当次要证据的原因。</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="lab-title"><span class="lab-tag">实验台 5</span><h3>方案 2 的大样本版本：三种算法比一比</h3></div>
+    <p class="small muted" style="margin-bottom:10px">模拟 10000 人。真实效应可以自己设：移植让每层死亡率都改变 δ。分配按方案 2：轻症 50%、重症按下面的滑块抛硬币。</p>
+    <div class="row" style="margin-bottom:10px">
+      <label class="ctrl"><span>真实效应 δ（每层死亡率的变化）<output id="o_d"></output></span><input type="range" id="s_d" min="-0.3" max="0.3" step="0.05" value="0"></label>
+      <label class="ctrl"><span>重症被移植的概率 <output id="o_q"></output></span><input type="range" id="s_q" min="0.5" max="0.98" step="0.02" value="0.75"></label>
+    </div>
+    <div class="bars" id="cmpBars"></div>
+    <p class="small muted" id="cmpNote" style="margin-top:8px"></p>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：观察性研究</b>没有人替你抛硬币的时候，要靠三个假设（可交换性、正性、一致性）把观察数据“当成”条件随机试验。对应你论文里真实日志上的 OPE。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 第 1 章的 20 位神：[名, Y0, Y1, 表1.2的A] ---------- */
+const GODS=[['瑞亚',0,1,0],['克洛诺斯',1,0,0],['得墨忒耳',0,0,0],['哈迪斯',0,0,0],['赫斯提亚',0,0,1],['波塞冬',1,0,1],['赫拉',0,0,1],['宙斯',0,1,1],['阿尔忒弥斯',1,1,0],['阿波罗',1,0,0],
+ ['勒托',0,1,0],['阿瑞斯',1,1,1],['雅典娜',1,1,1],['赫菲斯托斯',0,1,1],['阿佛洛狄忒',0,1,1],['库克罗普斯',0,1,1],['珀耳塞福涅',1,1,1],['赫尔墨斯',1,0,1],['赫柏',1,0,1],['狄俄尼索斯',1,0,1]];
+let A=GODS.map(g=>g[3]),coin=7;
+function drawX(){
+  const t=GODS.filter((g,i)=>A[i]),u=GODS.filter((g,i)=>!A[i]);
+  const r=(arr,k)=>arr.length?`${arr.filter(g=>g[k]).length}/${arr.length} = ${(arr.filter(g=>g[k]).length/arr.length).toFixed(2)}`:'—';
+  $('#xTbl').innerHTML=`<thead><tr><th></th><th>处理组 A=1（${t.length} 位）</th><th>对照组 A=0（${u.length} 位）</th></tr></thead><tbody>
+   <tr><td>如果都不移植 Pr[Y<sup>a=0</sup>=1|A]</td><td class="num">${r(t,1)}</td><td class="num">${r(u,1)}</td></tr>
+   <tr><td>如果都移植 Pr[Y<sup>a=1</sup>=1|A]</td><td class="num">${r(t,2)}</td><td class="num">${r(u,2)}</td></tr></tbody>`;
+  const f=(arr,k)=>arr.length?arr.filter(g=>g[k]).length/arr.length:NaN;
+  const gap=Math.max(Math.abs(f(t,1)-f(u,1)),Math.abs(f(t,2)-f(u,2)));
+  $('#xVerdict').innerHTML=!t.length||!u.length?'有一组没有人。':gap<0.001?'两行都左右相等：可交换性成立，关联等于因果。':
+    `左右不相等（最大差 ${gap.toFixed(2)}）：两组人本来的风险就不同，可交换性不成立。${$('#x_coin').classList.contains('on')?'抛硬币也会这样，因为 20 个人太少，见右边的实验台 2。':''}`;
+}
+segmented(['x_book','x_coin','x_sick'],id=>{
+  if(id==='x_book')A=GODS.map(g=>g[3]);
+  if(id==='x_coin'){const r=rng(coin++*977);A=GODS.map(()=>r()<.5?1:0)}
+  if(id==='x_sick')A=GODS.map(g=>g[1]);
+  drawX()});
+$('#x_coin').addEventListener('click',()=>{});
+drawX();
+
+/* ---------- 实验台 2：大样本随机试验 ---------- */
+let rVals=[],rSeed=11;
+function runTrials(){const n=+$('#r_n').value;const r=rng(rSeed++*131);rVals=[];
+  for(let k=0;k<300;k++){let d1=0,n1=0,d0=0,n0=0;
+    for(let i=0;i<n;i++){const L=r()<.6;const p=L?2/3:1/4;const a=r()<.5;const y=r()<p;if(a){n1++;d1+=y}else{n0++;d0+=y}}
+    if(n1&&n0)rVals.push(d1/n1-d0/n0)}
+  drawR()}
+function drawR(){histogram($('#rCv'),rVals,{lo:-.6,hi:.6,bins:60,ticks:[-.6,-.3,0,.3,.6],line:0,lineLabel:'真实效应 0'});
+  if(!rVals.length)return;$('#rNote').innerHTML=`n = ${$('#r_n').value}：95% 的试验落在 <b class="m">[${fmt(quantile(rVals,.025))}, ${fmt(quantile(rVals,.975))}]</b>。随机化保证的是“平均来说”两组可交换；样本越大，单次试验离真相越近。`}
+$('#r_go').onclick=runTrials;$('#r_n').onchange=runTrials;runTrials();onRedraw(drawR);
+
+/* ---------- 实验台 3：书中表 2.2 ---------- */
+// [名, L, A, Y]
+const T22=[['瑞亚',0,0,0],['克洛诺斯',0,0,1],['得墨忒耳',0,0,0],['哈迪斯',0,0,0],['赫斯提亚',0,1,0],['波塞冬',0,1,0],['赫拉',0,1,0],['宙斯',0,1,1],
+ ['阿尔忒弥斯',1,0,1],['阿波罗',1,0,1],['勒托',1,0,0],['阿瑞斯',1,1,1],['雅典娜',1,1,1],['赫菲斯托斯',1,1,1],['阿佛洛狄忒',1,1,1],['库克罗普斯',1,1,1],['珀耳塞福涅',1,1,1],['赫尔墨斯',1,1,0],['赫柏',1,1,0],['狄俄尼索斯',1,1,0]];
+let tView='raw';
+function pA1(l){const g=T22.filter(x=>x[1]===l);return g.filter(x=>x[2]).length/g.length}
+const wOf=x=>1/(x[2]?pA1(x[1]):1-pA1(x[1]));
+function drawT22(){
+  const ipw=tView==='ipw';
+  $('#t22').innerHTML=`<thead><tr><th>神</th><th>L 危重</th><th>A 移植</th><th>Y 死亡</th>${ipw?'<th>Pr[A=a|L]</th><th>权重 W</th>':''}</tr></thead><tbody>`+
+    T22.map(x=>`<tr><td>${x[0]}</td><td class="num">${x[1]}</td><td class="num ${x[2]?'y1':'y0'}">${x[2]}</td><td class="num">${x[3]}</td>${ipw?`<td class="num">${(x[2]?pA1(x[1]):1-pA1(x[1])).toFixed(2)}</td><td class="num">${wOf(x).toFixed(2)}</td>`:''}</tr>`).join('')+'</tbody>';
+  const cell=(l,a)=>{const g=T22.filter(x=>x[1]===l&&x[2]===a);return [g.filter(x=>x[3]).length,g.length]};
+  const wsum=(a,f)=>T22.filter(x=>x[2]===a&&f(x)).reduce((s,x)=>s+wOf(x),0);
+  if(!ipw){const c=[cell(0,1),cell(0,0),cell(1,1),cell(1,0)];
+    $('#t22stats').innerHTML=`<div class="stat"><div class="k">轻症 L=0：移植 / 不移植死亡率</div><div class="v">${c[0][0]}/${c[0][1]} · ${c[1][0]}/${c[1][1]}</div></div>
+     <div class="stat"><div class="k">重症 L=1：移植 / 不移植死亡率</div><div class="v">${c[2][0]}/${c[2][1]} · ${c[3][0]}/${c[3][1]}</div></div>
+     <div class="stat"><div class="k">不分层直接比 Pr[Y=1|A]</div><div class="v">7/13 · 3/7</div></div>
+     <div class="stat"><div class="k">Pr[A=1|L=0] · Pr[A=1|L=1]</div><div class="v">${pA1(0).toFixed(2)} · ${pA1(1).toFixed(2)}</div></div>`}
+  else{const n1=wsum(1,()=>1),d1=wsum(1,x=>x[3]),n0=wsum(0,()=>1),d0=wsum(0,x=>x[3]);
+    $('#t22stats').innerHTML=`<div class="stat"><div class="k">伪总体人数</div><div class="v">${(n1+n0).toFixed(0)}</div></div>
+     <div class="stat"><div class="k">伪总体 移植组死亡</div><div class="v">${d1.toFixed(0)}/${n1.toFixed(0)} = ${(d1/n1).toFixed(2)}</div></div>
+     <div class="stat"><div class="k">伪总体 不移植组死亡</div><div class="v">${d0.toFixed(0)}/${n0.toFixed(0)} = ${(d0/n0).toFixed(2)}</div></div>
+     <div class="stat"><div class="k">伪总体里 Pr[L=1|A=1] · Pr[L=1|A=0]</div><div class="v">${(wsum(1,x=>x[1])/n1).toFixed(2)} · ${(wsum(0,x=>x[1])/n0).toFixed(2)}</div></div>`}
+}
+segmented(['t_raw','t_ipw'],id=>{tView=id==='t_raw'?'raw':'ipw';drawT22()});drawT22();
+
+/* ---------- 实验台 4：标准化 ---------- */
+function drawStd(){
+  const v=id=>+$('#s_'+id).value;['pl','a01','a00','a11','a10'].forEach(id=>$('#o_'+id).textContent=v(id).toFixed(2));
+  const pl=v('pl'),s1=v('a01')*(1-pl)+v('a11')*pl,s0=v('a00')*(1-pl)+v('a10')*pl;
+  $('#stdFormula').innerHTML=`移植：${v('a01').toFixed(2)} × ${(1-pl).toFixed(2)} + ${v('a11').toFixed(2)} × ${pl.toFixed(2)} = ${s1.toFixed(3)}<br>不移植：${v('a00').toFixed(2)} × ${(1-pl).toFixed(2)} + ${v('a10').toFixed(2)} × ${pl.toFixed(2)} = ${s0.toFixed(3)}`;
+  $('#stdStats').innerHTML=`<div class="stat"><div class="k">Pr[Y<sup>a=1</sup>=1]</div><div class="v y1">${s1.toFixed(3)}</div></div><div class="stat"><div class="k">Pr[Y<sup>a=0</sup>=1]</div><div class="v y0">${s0.toFixed(3)}</div></div>
+   <div class="stat"><div class="k">因果风险差</div><div class="v">${fmt(s1-s0,3)}</div></div><div class="stat"><div class="k">因果风险比</div><div class="v">${s0>0?(s1/s0).toFixed(2):'—'}</div></div>`}
+['pl','a01','a00','a11','a10'].forEach(id=>$('#s_'+id).oninput=drawStd);drawStd();
+
+/* ---------- 实验台 5：三种算法 ---------- */
+function drawCmp(){
+  const d=+$('#s_d').value,q=+$('#s_q').value;$('#o_d').textContent=fmt(d);$('#o_q').textContent=q.toFixed(2);
+  const r=rng(2024);const N=10000;const rows=[];
+  for(let i=0;i<N;i++){const L=r()<.6?1:0;const base=L?.6:.2;const a=r()<(L?q:.5)?1:0;const y=r()<clamp(base+(a?d:0),0,1)?1:0;rows.push([L,a,y])}
+  const cell=(l,a)=>{const g=rows.filter(x=>x[0]===l&&x[1]===a);return g.length?g.filter(x=>x[2]).length/g.length:0};
+  const pL=rows.filter(x=>x[0]).length/N;
+  const naive=(rows.filter(x=>x[1]&&x[2]).length/rows.filter(x=>x[1]).length)-(rows.filter(x=>!x[1]&&x[2]).length/rows.filter(x=>!x[1]).length);
+  const std=(cell(0,1)-cell(0,0))*(1-pL)+(cell(1,1)-cell(1,0))*pL;
+  const pa=l=>rows.filter(x=>x[0]===l&&x[1]).length/rows.filter(x=>x[0]===l).length;
+  let w1=0,y1=0,w0=0,y0=0;rows.forEach(([l,a,y])=>{const w=1/(a?pa(l):1-pa(l));if(a){w1+=w;y1+=w*y}else{w0+=w;y0+=w*y}});
+  const ipw=y1/w1-y0/w0;
+  const truth=(clamp(.2+d,0,1)-.2)*.4+(clamp(.6+d,0,1)-.6)*.6;
+  barList($('#cmpBars'),[['真实效应',truth,'--muted'],['直接比较（关联）',naive],['标准化',std],['IP 加权',ipw]],{min:-.4,max:.4,fmt:v=>fmt(v,3)});
+  $('#cmpNote').textContent=`直接比较偏了 ${fmt(naive-truth,3)}：重症更常被移植，而重症本来就更容易死。标准化和 IP 加权都把它纠正回来（只差抽样误差）。把“重症被移植的概率”拉到接近 1，看看 IP 加权会发生什么：这就是下一章的“正性”。`}
+['s_d','s_q'].forEach(id=>$('#'+id).oninput=drawCmp);drawCmp();
+
+quiz($('#quizBox'),[
+ {q:'可交换性 Y<sup>a</sup> ⫫ A 的意思是：',o:['观察到的 Y 和 A 独立','处理组和对照组在同样的处理下会有同样的风险','处理没有效果'],a:1,w:'可交换性说的是潜在结果，不是观察结局。Y ⫫ A 才等于“没有效应”。'},
+ {q:'表 2.2 里，为什么 7/13 vs 3/7 不能直接当因果效应？',o:['样本太小','重症更常被移植，两组的病情分布不同','因为是神话'],a:1,w:'方案 2 让重症以 75% 被移植，处理组里重症偏多，边际可交换性不成立。'},
+ {q:'标准化时，各层的权重用的是：',o:['处理组里的 L 分布','对照组里的 L 分布','整个人群的 L 分布'],a:2,w:'目标是整个人群的 Pr[Y^a=1]，所以按整个人群的 Pr[L=l] 加权。'},
+ {q:'重症未移植的神的 IP 权重是 4，直觉上是因为：',o:['他们更重要','重症里没被移植的人很少，每人要代表更多没被观察到的人','权重是随便定的'],a:1,w:'Pr[A=0|L=1]=0.25，权重 1/0.25 = 4。'},
+ {q:'你的论文中，DR 权重 π(a|h)/μ̂(a|h) 里的 μ̂ 对应书中的什么？',o:['结局模型','Pr[A=a|L]，也就是处理分配概率（倾向评分）','因果效应'],a:1,w:'μ 是日志策略在历史 h 下选动作 a 的概率，对应 Pr[A=a|L]。第 15 章会叫它倾向评分。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

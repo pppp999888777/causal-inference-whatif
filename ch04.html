@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 4 章 效应修饰 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="4">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 4 章 · 第二轮</div>
+    <h1>效应修饰</h1>
+    <p class="lead">平均因果效应是<b>某个人群</b>的平均。换一个人群，比如男性换成女性、ASSISTments 换成 Junyi，效应可能不一样。变量 V 让效应随它的取值而变，就叫 V 是<b>效应修饰因子</b>。这一章讲怎么发现它、为什么它让“效应”这个词必须带上人群，以及一个反直觉的现象：比值比不可坍缩。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">一句话</div>
+    <p>不存在“唯一的”因果效应，只有<b>某个人群里</b>的因果效应。</p>
+    <div class="formula">Pr[Y<sup>a=1</sup>=1|V=v] − Pr[Y<sup>a=0</sup>=1|V=v] 随 v 变化</div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s41" data-short="定义"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">4.1</span><h2>定义：效应在不同的 V 层里不一样</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里给 20 位神加了一个二分变量 V，把他们分成两组。整体上移植没有平均效应，但分开看：在一组里移植有害，在另一组里移植有益，正好抵消。V 就是效应修饰因子。</p>
+      <p>要注意两件事。第一，效应修饰<b>依赖尺度</b>：同一组数据，在风险差尺度上有修饰，在风险比尺度上可能没有，反过来也一样。所以要说“在加法尺度上有修饰”或“在乘法尺度上有修饰”。</p>
+      <p>第二，如果两层的效应<b>方向相反</b>（一层有益，一层有害），这叫<b>定性的</b>效应修饰，它在任何尺度上都存在。</p>
+      <p>第三，V 只是“标记”不同人群，不一定是原因。书里区分<b>因果修饰因子</b>和<b>替代修饰因子</b>：比如国籍本身不改变移植效果，但它可能和真正起作用的东西（比如护理质量）有关，这时国籍只是替代修饰因子。所以叫“修饰因子”，不叫“交互作用”。后者是第 5 章的内容。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>同一组数，换个尺度看修饰</h3></div>
+      <div class="row">
+        <label class="ctrl"><span>V=1 层：处理 / 不处理风险 <output id="o_11"></output> / <output id="o_10"></output></span><input type="range" id="s_11" min="0.02" max="0.98" step="0.02" value="0.40"><input type="range" id="s_10" min="0.02" max="0.98" step="0.02" value="0.20"></label>
+      </div>
+      <div class="row">
+        <label class="ctrl"><span>V=0 层：处理 / 不处理风险 <output id="o_01"></output> / <output id="o_00"></output></span><input type="range" id="s_01" min="0.02" max="0.98" step="0.02" value="0.20"><input type="range" id="s_00" min="0.02" max="0.98" step="0.02" value="0.10"></label>
+      </div>
+      <div class="tbl-wrap"><table id="modTbl"></table></div>
+      <div class="verdict" id="modVerdict"></div>
+      <p class="small muted">默认值：两层风险比都是 2（乘法尺度没有修饰），但风险差一个 0.20、一个 0.10（加法尺度有修饰）。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s42" data-short="分层"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">4.2–4.3</span><h2>用分层来发现修饰，以及为什么要在乎它</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>在随机试验里，按 V 分层，在每层里分别算效应，就能发现修饰。观察性研究里则要在每一层里都满足识别条件。</p>
+      <p>为什么在乎？最重要的理由是<b>可迁移性</b>（transportability）。如果效应受 V 修饰，而两个人群的 V 分布不同，那么从人群甲估计出的平均效应就不能直接搬到人群乙。书里的例子是：一个疗法在年轻人里效果好，在一个以年轻人为主的人群里做试验，结论搬到老年人群就可能夸大。</p>
+      <p>其他理由：找出哪类人受益最多、哪类人受害，以便有针对性地处理；以及理解机制。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里 · 数据集就是一个效应修饰因子</div>
+        <p>你的主结论 −0.0700 是 4 个数据集的平均。分开看：ASSISTments −0.0946、EdNet −0.0951、Algebra 2005 −0.0890、Junyi −0.0014。决策值检查点下 Junyi 甚至是 <span class="m">+0.0181</span>，方向反了，这是<b>定性的</b>效应修饰。Junyi 的特点是 681 个技能、有 850 条先修关系，模拟器保留了 12 条先修边。论文里可以把它写成“效应受数据集特征修饰”，而不是一个笼统的平均。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>“平均效应”取决于你在平均哪个人群</h3></div>
+      <p class="small muted">用论文里 Safe-DFKT-AG − DKT 的分数据集 NLG 差（验证 BCE 检查点）。调整你关心的目标人群里，每种学生所占的比重。</p>
+      <div id="dsSliders" class="stack"></div>
+      <div class="stats" id="dsStats"></div>
+      <p class="small" id="dsNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s44" data-short="分层调整"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">4.4–4.5</span><h2>分层、标准化、匹配：回答的是不同的问题</h2></div>
+  <div class="prose">
+    <p>按 L 分层得到的是<b>条件效应</b>（每层一个）；标准化和 IP 加权得到的是<b>边际效应</b>（整个人群一个）。两者都对，只是回答的问题不同。</p>
+    <p><b>匹配</b>（4.5 节）：给每个处理组成员找一个 L 相同的对照组成员，然后比较匹配后的两组。匹配后的人群 L 分布和处理组一样，所以匹配估计的是<b>处理组里的效应</b>（ATT），不是整个人群的效应（ATE）。如果效应受 L 修饰，ATT 和 ATE 就不同。</p>
+    <p>写成标准化公式，区别只在权重：ATE 用整个人群的 <span class="m">Pr[L=l]</span>，ATT 用处理组的 <span class="m">Pr[L=l|A=1]</span>。</p>
+  </div>
+  <div class="two">
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>ATE 和 ATT</h3></div>
+      <p class="small muted">两层：重症层效应 −0.30，轻症层效应 −0.05。重症在整个人群里占 30%。</p>
+      <label class="ctrl"><span>处理组里重症所占比例 Pr[L=1|A=1] <output id="o_att"></output></span><input type="range" id="s_att" min="0" max="1" step="0.05" value="0.7"></label>
+      <div class="stats" id="attStats"></div>
+      <p class="small muted">处理组里重症越多，ATT 就越偏向重症层的效应。没有效应修饰（两层效应相同）时，ATT = ATE。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · “配对”不是“匹配”</div>
+      <p>你的统计检验是在 20 个“种子 × 数据集”单元上做配对：同一单元里，两个方法面对同一批模拟学生。这里每个单元同时有两种处理，所以估计的是这 20 个单元的平均效应（类似 ATE）。书里的“匹配”是另一回事：每个人只有一种处理，靠找 L 相同的人凑对，估计的是 ATT。审稿或答辩时别把两个词混用。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s46" data-short="不可坍缩"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">4.6</span><h2>比值比的怪现象：每层都一样，合起来却不一样</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>在没有任何混杂的随机试验里，如果每层的风险差相同，合并后的风险差也一样；风险比也一样。<b>比值比不是这样</b>：两层的比值比都是 3，合起来的比值比可能只有 2.5。这叫比值比的<b>不可坍缩性</b>（noncollapsibility）。</p>
+      <p>这不是偏倚，也不是混杂，只是比值比这个度量本身的性质。后果是：一个调整了 L 的逻辑回归给出的“条件比值比”和边际比值比是两个不同的数，不能拿来直接比较。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>你的结局是 NLG，用的是均值差，差是可坍缩的，所以不会遇到这个问题。但如果审稿人建议“用逻辑回归分析是否达到掌握”，得到的比值比就有这个性质，需要说明。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 4</span><h3>两层比值比都相同，合并后却变小</h3></div>
+      <p class="small muted">随机试验，L 和 A 独立，各占一半。两层的比值比固定为 3，可以调整 L 对结局的影响。</p>
+      <label class="ctrl"><span>L=1 层未处理组的风险 <output id="o_nc"></output></span><input type="range" id="s_nc" min="0.05" max="0.9" step="0.05" value="0.6"></label>
+      <div class="tbl-wrap"><table id="ncTbl"></table></div>
+      <p class="small" id="ncNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>你的结论在 Junyi 上不成立，是不是说明结论不稳健？</summary><p>可以把它表述为效应修饰：在没有先修结构的 3 个数据集上，差距约 −0.09；在有先修结构的 Junyi 上接近 0，决策值检查点下甚至为正。这是关于“在什么条件下”的信息，而不是噪声。需要补的证据是：Junyi 的哪个特征（先修边、技能数、学生能力分布）在起修饰作用，可以在模拟器里单独打开或关闭先修边来检验。</p></details>
+  <div class="callout" style="margin-top:18px"><b>下一章：交互作用</b>效应修饰里的 V 只是一个“标记”。如果你能同时干预两个处理，就可以问它们之间是否有交互。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1 ---------- */
+function drawMod(){
+  const v=id=>+$('#s_'+id).value;['11','10','01','00'].forEach(id=>$('#o_'+id).textContent=v(id).toFixed(2));
+  const rd1=v('11')-v('10'),rd0=v('01')-v('00'),rr1=v('11')/v('10'),rr0=v('01')/v('00');
+  $('#modTbl').innerHTML=`<thead><tr><th></th><th>V=1 层</th><th>V=0 层</th></tr></thead><tbody>
+   <tr><td>风险差</td><td class="num">${fmt(rd1)}</td><td class="num">${fmt(rd0)}</td></tr>
+   <tr><td>风险比</td><td class="num">${rr1.toFixed(2)}</td><td class="num">${rr0.toFixed(2)}</td></tr></tbody>`;
+  const add=Math.abs(rd1-rd0)>.005,mul=Math.abs(Math.log(rr1/rr0))>.02,qual=rd1*rd0<0;
+  $('#modVerdict').innerHTML=qual?'<span class="bad-t">定性修饰</span>：两层方向相反，在任何尺度上都有修饰。':
+    `加法尺度：${add?'<span class="bad-t">有修饰</span>':'<span class="ok-t">无修饰</span>'}；乘法尺度：${mul?'<span class="bad-t">有修饰</span>':'<span class="ok-t">无修饰</span>'}。${add!==mul?'同一组数，结论取决于尺度。':''}`}
+['11','10','01','00'].forEach(id=>$('#s_'+id).oninput=drawMod);drawMod();
+
+/* ---------- 实验台 2：数据集作为修饰因子 ---------- */
+const DS=[['ASSISTments 2009',-.0946],['EdNet',-.0951],['Algebra 2005',-.0890],['Junyi（有先修结构）',-.0014]];
+$('#dsSliders').innerHTML=DS.map(([n],i)=>`<label class="ctrl"><span>${n} 的比重 <output id="o_ds${i}"></output></span><input type="range" id="s_ds${i}" min="0" max="10" step="1" value="${i===3?1:1}"></label>`).join('');
+function drawDS(){
+  const w=DS.map((_,i)=>+$('#s_ds'+i).value);const tot=w.reduce((a,b)=>a+b,0)||1;
+  w.forEach((x,i)=>$('#o_ds'+i).textContent=Math.round(x/tot*100)+'%');
+  const avg=DS.reduce((s,[,e],i)=>s+e*w[i]/tot,0);
+  $('#dsStats').innerHTML=`<div class="stat"><div class="k">目标人群里的平均效应（AG − DKT）</div><div class="v">${fmt(avg,4)}</div></div><div class="stat"><div class="k">论文里四个数据集等权</div><div class="v">−0.0700</div></div>`;
+  $('#dsNote').textContent=w[3]/tot>.7?'如果目标人群主要是 Junyi 那样有先修结构的课程，Safe-DFKT-AG 和 DKT 几乎一样好。':'等权时就是论文报告的数（四舍五入后）。把 Junyi 的比重拉满看看。'}
+DS.forEach((_,i)=>$('#s_ds'+i).oninput=drawDS);drawDS();
+
+/* ---------- 实验台 3：ATE vs ATT ---------- */
+function drawATT(){const p=+$('#s_att').value;$('#o_att').textContent=p.toFixed(2);
+  const ate=.3*-.30+.7*-.05,att=p*-.30+(1-p)*-.05;
+  $('#attStats').innerHTML=`<div class="stat"><div class="k">ATE（按整个人群加权）</div><div class="v">${fmt(ate,3)}</div></div><div class="stat"><div class="k">ATT（按处理组加权，匹配估计的就是它）</div><div class="v">${fmt(att,3)}</div></div>`}
+$('#s_att').oninput=drawATT;drawATT();
+
+/* ---------- 实验台 4：比值比不可坍缩 ---------- */
+function drawNC(){
+  const p10=+$('#s_nc').value,p00=.1;$('#o_nc').textContent=p10.toFixed(2);
+  const odds=p=>p/(1-p),inv=o=>o/(1+o);const p11=inv(3*odds(p10)),p01=inv(3*odds(p00));
+  const m1=(p11+p01)/2,m0=(p10+p00)/2;const or=(a,b)=>odds(a)/odds(b);
+  $('#ncTbl').innerHTML=`<thead><tr><th></th><th>处理组风险</th><th>对照组风险</th><th>风险差</th><th>比值比</th></tr></thead><tbody>
+   <tr><td>L=1 层</td><td class="num">${p11.toFixed(3)}</td><td class="num">${p10.toFixed(3)}</td><td class="num">${fmt(p11-p10,3)}</td><td class="num">3.00</td></tr>
+   <tr><td>L=0 层</td><td class="num">${p01.toFixed(3)}</td><td class="num">${p00.toFixed(3)}</td><td class="num">${fmt(p01-p00,3)}</td><td class="num">3.00</td></tr>
+   <tr><td><b>合并</b></td><td class="num">${m1.toFixed(3)}</td><td class="num">${m0.toFixed(3)}</td><td class="num">${fmt(m1-m0,3)}</td><td class="num"><b>${or(m1,m0).toFixed(2)}</b></td></tr></tbody>`;
+  $('#ncNote').innerHTML=`合并后的风险差正好是两层风险差的平均（可坍缩），合并后的比值比 ${or(m1,m0).toFixed(2)} 却比两层的 3 都小。L 对结局影响越大，差得越多。这里没有混杂：L 和 A 独立。`}
+$('#s_nc').oninput=drawNC;drawNC();
+
+quiz($('#quizBox'),[
+ {q:'两层的风险比都是 2，风险差分别是 0.2 和 0.1。下面哪个说法对？',o:['没有效应修饰','加法尺度有修饰，乘法尺度没有','两种尺度都有修饰'],a:1,w:'效应修饰依赖尺度，必须说明是哪个尺度。'},
+ {q:'一层效应有益，另一层有害。这是：',o:['定性效应修饰，任何尺度都存在','只在加法尺度上的修饰','混杂'],a:0,w:'方向相反时，无论用差还是比，两层的效应都不同。'},
+ {q:'匹配估计的通常是：',o:['整个人群的效应 ATE','处理组里的效应 ATT','对照组里的效应'],a:1,w:'匹配后的人群 L 分布和处理组一致。'},
+ {q:'随机试验里，两层的比值比都是 3，合并后的比值比是 2.6。原因是：',o:['存在混杂','比值比不可坍缩','抽样误差'],a:1,w:'即使没有混杂，比值比的边际值也可以和条件值不同。'},
+ {q:'论文中 Junyi 上 AG 在决策值检查点下反超 DKT（+0.0181），其他三个数据集落后。这最适合描述为：',o:['数据集对效应的定性修饰','测量误差','选择偏倚'],a:0,w:'效应方向随数据集变化，是定性的效应修饰（前提是差异不是随机波动，需要检验）。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 21 章 时变处理的 g 方法 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="21">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 III 部分 · 第 21 章 · 必读</div>
+    <h1>时变处理的 g 方法</h1>
+    <p class="lead">第 20 章说传统方法在处理—混杂反馈下都会错。这一章给出能用的方法：时变 g 公式、时变 IP 加权、序贯双重稳健估计、时变 G 估计。它们的共同点是：<b>从不把 L 放进结局回归里去“调整”</b>，而是按时间顺序一步一步地模拟或加权。最后回到你的论文：全程部署的价值 V(π) 和你估计的一步偏离值 V¹ˢᴰ(π) 到底差在哪。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">两步时的两个公式</div>
+    <div class="formula">g 公式：E[Y<sup>a₀,a₁</sup>] = Σ<sub>l₁</sub> E[Y|a₀,l₁,a₁]·Pr[l₁|a₀]</div>
+    <div class="formula">IP 权重：W = 1 / ( f(A₀) · f(A₁|A₀,L₁) )</div>
+    <p class="small muted">K 步时，权重是 K 个比值的连乘。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s211" data-short="g 公式与 IP"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">21.1–21.2</span><h2>时变 g 公式和时变 IP 加权</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>g 公式</b>（21.1 节）：按时间顺序“模拟”。先按 a₀ 的世界里 L₁ 的分布 <span class="m">Pr[l₁|a₀]</span> 抽 L₁，再在 (a₀, l₁, a₁) 下取平均结局，最后对 l₁ 加权求和。和第 20 章“按 L₁ 分层再平均”的区别只在权重：分层用的是整个人群的 Pr[l₁]，g 公式用的是<b>在 a₀ 这个世界里</b>的 Pr[l₁|a₀]。这一点点差别，就是 A₀ 经过 L₁ 的效应。</p>
+      <p>动态策略也一样：把 a₁ 换成 g(l₁) 即可。步数多、L 维度高时，用参数模型估计每一步的 Pr[L<sub>k</sub>|过去] 和 E[Y|全部历史]，再用蒙特卡洛模拟整条轨迹，这叫<b>参数 g 公式</b>。</p>
+      <p><b>IP 加权</b>（21.2 节）：每个人的权重是每一步“实际接受的处理”的概率倒数的<b>连乘</b>，<span class="m">W = Π<sub>k</sub> 1 / f(A<sub>k</sub> | Ā<sub>k−1</sub>, L̄<sub>k</sub>)</span>。在伪总体里，每一步的处理都和过去的 L 无关，于是可以直接比较。对动态策略 g：只保留实际处理和 g 一致的那些人，再按权重放大（书里叫“人为删失”）。</p>
+      <p>可以拟合一个时变的边际结构模型，比如 <span class="m">E[Y<sup>ā</sup>] = β₀ + β₁·cum(ā)</span>，cum(ā) 是累计处理次数。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>用第 20 章那张 8 格表，算每种策略的价值</h3></div>
+      <p class="small muted">日志策略：A₀ 50% 出难题；答对后 80% 出难题、答错后 20% 出难题。精确计算，无抽样误差。</p>
+      <div class="tbl-wrap"><table id="gmTbl"></table></div>
+      <p class="small" id="gmNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s213" data-short="双重稳健与 G 估计"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">21.3–21.5</span><h2>序贯双重稳健、G 估计，以及删失也是一种处理</h2></div>
+  <div class="prose">
+    <p><b>序贯双重稳健</b>（21.3 节）：从最后一步往前，一步一步地做“回归 + 加权修正”。最后一步：用结局模型预测在策略 g 下的结局，再用最后一步的 IP 权重修正残差；把修正后的预测当作新的“结局”，回到前一步重复。每一步只要结局模型或处理模型有一个对，整体就是相合的。它和强化学习里的拟合 Q 迭代（FQE）加上逐步重要性加权修正，是同一个思路。</p>
+    <p><b>G 估计</b>（21.4 节）：第 14 章的结构嵌套模型推广到每个时间点，每一步一个 blip 函数，从最后一步往前依次估计。</p>
+    <p><b>删失</b>（21.5 节）：随访中失访也是一个“时变处理”。把“不失访”加进策略里，删失权重 <span class="m">Π 1/Pr[C<sub>k</sub>=0|…]</span> 乘进处理权重即可。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="V 与 V¹ˢᴰ"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>全程部署 V(π) 和一步偏离 V¹ˢᴰ(π)</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>你论文的估计目标：</p>
+      <div class="formula">V<sup>1SD</sup>(π) = E<sub>h<sub>t</sub>~μ</sub> E<sub>a~π(·|h<sub>t</sub>)</sub> E<sub>μ</sub>[ r<sub>t</sub> | h<sub>t</sub>, a<sub>t</sub> = a ]</div>
+      <p>用这一章的语言：在第 t 步按 π 选，之前和之后都按日志策略 μ 走，再对 t 平均。而全程部署的 <span class="m">V(π) = E[Y<sup>π</sup>]</span> 要求每一步都按 π 选。两者是<b>不同的干预</b>，对应不同的潜在结果。</p>
+      <p>为什么不直接估 V(π)？用 IP 加权的话，权重是 60 步比值 π/μ 的连乘，方差随步数指数增长（下面的实验台 3）；用 g 公式或序贯 DR，需要对 60 步的转移和结局建模。单步估计目标方差小得多，所以文献里常用。</p>
+      <p>代价：两种估计目标对策略的<b>排序</b>可能不同。一个只在单步看起来好的策略（比如总是挑能立刻拿到奖励的技能），全程部署后可能让学生一直在已经会的技能上打转。这正是你论文里“奖励作弊”的一种可能解释：<b>训练目标优化的是 V¹ˢᴰ，评估看的是 V(π)</b>。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>同一个策略，两种估计目标</h3></div>
+      <p class="small muted">两步模型。V¹ˢᴰ：分别在第 0 步或第 1 步换成 π（另一步按日志策略），两者平均。V：两步都按 π。</p>
+      <label class="ctrl"><span>日志策略对 L₁ 的依赖 s <output id="o_s2"></output></span><input type="range" id="s_s2" min="0.05" max="0.95" step="0.05" value="0.8"></label>
+      <div class="tbl-wrap"><table id="vTbl"></table></div>
+      <p class="small" id="vNote"></p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>为什么不直接用 IP 加权估全程部署：连乘权重的有效样本量</h3></div>
+    <p class="small muted" style="margin-bottom:10px">每一步日志策略在 K 个技能上均匀随机；目标策略给它最想选的技能概率 p，其余平分。如果 μ 已知，连乘权重的期望是 1，但二阶矩是 (K·Σπ²)<sup>T</sup>，有效样本量 ≈ n / (K·Σπ²)<sup>T</sup>。</p>
+    <div class="row" style="margin-bottom:8px">
+      <label class="ctrl"><span>技能数 K <output id="o_K"></output></span><input type="range" id="s_K" min="2" max="30" step="1" value="12"></label>
+      <label class="ctrl"><span>目标策略的集中度 p <output id="o_p"></output></span><input type="range" id="s_p" min="0.1" max="1" step="0.05" value="0.5"></label>
+      <label class="ctrl"><span>日志里的学生轨迹数 n <output id="o_nn"></output></span><input type="range" id="s_nn" min="3" max="7" step="1" value="5"></label>
+    </div>
+    <canvas id="essCv" height="210" aria-label="有效样本量随步数变化"></canvas>
+    <p class="small" id="essNote"></p>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>训练目标是 V¹ˢᴰ，评估看的是全程部署的 NLG，这不是自相矛盾吗？</summary><p>这正是论文要诚实说明的地方。可以这样回答：V¹ˢᴰ 是一个方差可控、可以从日志中估计的代理目标；论文明确说明了它和 V(π) 的区别，并在模拟器里对 V¹ˢᴰ 本身算了真值，排除了估计偏差的解释。结果显示代理目标上的改进没有转化为全程部署的改进，这本身就是一个有价值的发现，也指出了未来方向：序贯双重稳健或拟合 Q 评估这类直接针对 V(π) 的方法。</p></details>
+  <details><summary>能不能用序贯 DR 直接估 V(π)？</summary><p>可以。从第 60 步往前，每一步拟合一个 Q 函数 Q<sub>t</sub>(h, a)，用 π 对下一步的 Q 取期望作为当前步的回归目标，再用单步权重 π/μ̂ 修正残差（类似书中 21.3 节的思路）。它的方差介于单步 DR 和全程连乘 IP 之间，需要的是 60 个结局模型而不是 60 个权重的连乘。</p></details>
+  <div class="callout" style="margin-top:18px"><b>下一章：目标试验模拟</b>全书的收尾：把所有这些方法放进一个统一的框架里，先写清楚你想模拟的那个随机试验，再选方法。</div>
+</div></section>
+</main>
+
+<script>
+const PU=.5;const pL1=(a0,u)=>u?(a0?.6:.9):(a0?.2:.7);
+const EY=(a0,a1,l1,u)=>.20+.10*u+(a0?(u?.10:-.05):0)+(l1?(a1?.18:.04):(a1?-.06:.08));
+const STRATS=[['永远简单（0,0）',()=>0,()=>0],['永远困难（1,1）',()=>1,()=>1],['先易后难（0,1）',()=>0,()=>1],['先难后易（1,0）',()=>1,()=>0],
+ ['先易；答对→难，答错→易',()=>0,l=>l],['先难；答对→难，答错→易',()=>1,l=>l],['先易；答对→易，答错→难',()=>0,l=>1-l]];
+// 任意（可随机的）两步策略的真值：p0 = Pr[A₀=1]，p1(l1) = Pr[A₁=1|L₁]
+function trueV(p0,p1){let v=0;for(const u of[0,1]){const pu=u?PU:1-PU;for(const a0 of[0,1]){const q0=a0?p0:1-p0;for(const l1 of[0,1]){const pl=l1?pL1(a0,u):1-pL1(a0,u);for(const a1 of[0,1]){const q1=a1?p1(a0,l1):1-p1(a0,l1);v+=pu*q0*pl*q1*EY(a0,a1,l1,u)}}}}return v}
+function cells(s){const C={};for(const a0 of[0,1])for(const l1 of[0,1])for(const a1 of[0,1]){let p=0,n=0;for(const u of[0,1]){const pu=u?PU:1-PU;const pl=l1?pL1(a0,u):1-pL1(a0,u);const q1=l1?(a1?s:1-s):(a1?1-s:s);const w=pu*.5*pl*q1;p+=w;n+=w*EY(a0,a1,l1,u)}C[a0+''+l1+''+a1]={p,ey:n/p}}return C}
+
+/* ---------- 实验台 1 ---------- */
+(function(){const s=.8;const C=cells(s);
+  const pl1g=(l1,a0)=>{const t=C[a0+''+l1+'0'].p+C[a0+''+l1+'1'].p;const z=C[a0+'00'].p+C[a0+'01'].p+C[a0+'10'].p+C[a0+'11'].p;return t/z};
+  const pA1=(a1,l1)=>l1?(a1?s:1-s):(a1?1-s:s);
+  const rows=STRATS.map(([nm,g0,g1])=>{const a0=g0();
+    const tv=trueV(a0,(x,l)=>g1(l));
+    const gf=[0,1].reduce((acc,l1)=>acc+pl1g(l1,a0)*C[a0+''+l1+''+g1(l1)].ey,0);
+    let num=0,den=0;Object.keys(C).forEach(k=>{const A0=+k[0],L1=+k[1],A1=+k[2];if(A0===a0&&A1===g1(L1)){const w=1/(.5*pA1(A1,L1));num+=C[k].p*w*C[k].ey;den+=C[k].p*w}});
+    const ipw=num;// 期望权重和为 1，HT 与 Hajek 在无限样本下相同
+    let np=0,nn=0;Object.keys(C).forEach(k=>{const A0=+k[0],L1=+k[1],A1=+k[2];if(A0===a0&&A1===g1(L1)){np+=C[k].p;nn+=C[k].p*C[k].ey}});
+    return[nm,tv,gf,ipw,nn/np]});
+  $('#gmTbl').innerHTML='<thead><tr><th>策略</th><th>真值</th><th>g 公式</th><th>IP 加权</th><th>直接看“碰巧符合策略”的人</th></tr></thead><tbody>'+rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1].toFixed(3)}</td><td class="num">${r[2].toFixed(3)}</td><td class="num">${r[3].toFixed(3)}</td><td class="num ${Math.abs(r[4]-r[1])>.003?'bad-t':''}">${r[4].toFixed(3)}</td></tr>`).join('')+'</tbody>';
+  $('#gmNote').textContent='g 公式和 IP 加权对每一种策略（包括动态策略）都给出了真值。最后一列只是把“碰巧按这个策略被教”的学生挑出来求平均，没有加权，它是有偏的：符合“答对后出难题”的学生里，答对的人被过多代表了。'})();
+
+/* ---------- 实验台 2：V vs V¹ˢᴰ ---------- */
+function drawV(){const s=+$('#s_s2').value;$('#o_s2').textContent=s.toFixed(2);
+  const mu1=(a0,l1)=>l1?s:1-s;
+  const rows=STRATS.map(([nm,g0,g1])=>{const full=trueV(g0(),(a0,l)=>g1(l));const dev0=trueV(g0(),mu1);const dev1=trueV(.5,(a0,l)=>g1(l));return[nm,full,(dev0+dev1)/2]});
+  const rk=i=>{const order=rows.map((r,j)=>[r[i],j]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);const R=Array(rows.length);order.forEach((j,k)=>R[j]=k+1);return R};
+  const rF=rk(1),rS=rk(2);const bestF=rF.indexOf(1),bestS=rS.indexOf(1);
+  $('#vTbl').innerHTML='<thead><tr><th>策略 π</th><th>V(π) 全程部署</th><th>排名</th><th>V¹ˢᴰ(π)</th><th>排名</th></tr></thead><tbody>'+rows.map((r,j)=>`<tr><td>${r[0]}</td><td class="num">${r[1].toFixed(3)}</td><td class="num ${rF[j]===1?'hl':''}">${rF[j]}</td><td class="num">${r[2].toFixed(3)}</td><td class="num ${rS[j]===1?'hl':''}">${rS[j]}</td></tr>`).join('')+'</tbody>';
+  const mu=trueV(.5,mu1);
+  $('#vNote').innerHTML=`日志策略自己的价值 V(μ) = ${mu.toFixed(3)}。`+(bestF===bestS?(()=>{let j=0,d=0;rows.forEach((r,i)=>{if(Math.abs(rF[i]-rS[i])>d){d=Math.abs(rF[i]-rS[i]);j=i}});
+      return `两种目标选出的最优策略相同（${rows[bestF][0]}），但 V¹ˢᴰ 把好坏策略的差距压缩了，因为只有一步按 π。`+(d?`中间的排名也变了：「${rows[j][0]}」全程部署排第 ${rF[j]}，按 V¹ˢᴰ 却排第 ${rS[j]}。用 V¹ˢᴰ 选模型、调检查点，选出来的不一定是全程最好的。`:'')+'拖动 s 看排名怎么随日志策略变化。'})():
+    `<b>两种目标选出的最优策略不同</b>：最大化 V¹ˢᴰ 会选「${rows[bestS][0]}」，它全程部署的价值只排第 ${rF[bestS]}。`)}
+$('#s_s2').oninput=drawV;drawV();
+
+/* ---------- 实验台 3：有效样本量 ---------- */
+function drawESS(){const K=+$('#s_K').value,p=+$('#s_p').value,ln=+$('#s_nn').value;const n=10**ln;
+  $('#o_K').textContent=K;$('#o_p').textContent=p.toFixed(2);$('#o_nn').textContent=n.toLocaleString();
+  const q=K>1?(1-p)/(K-1):0;const sum2=p*p+(K-1)*q*q;const per=K*sum2;
+  const pts=[];for(let T=1;T<=60;T++)pts.push([T,Math.max(-1,Math.log10(n)-T*Math.log10(per))]);
+  lineChart($('#essCv'),[{name:'log₁₀ 有效样本量',color:'--accent',pts}],{xlo:1,xhi:60,ylo:-1,yhi:Math.max(1,ln),xticks:[1,10,20,30,40,50,60],yticks:[0,1,2,3,4,5,6,7].filter(v=>v<=ln),yd:0,hlines:[{y:0,label:'只剩 1 条有效轨迹'}],xlabel:'步数 T',rpad:110});
+  const T1=Math.log10(n)/Math.log10(per);
+  $('#essNote').innerHTML=`每一步权重的二阶矩 = ${per.toFixed(2)}。${per<=1.0001?'目标策略和日志策略一样，没有损失。':`大约走到第 <b>${Math.max(1,Math.floor(T1))}</b> 步，${n.toLocaleString()} 条轨迹就只剩相当于 1 条的有效信息。你的场景是 60 步：全程连乘的 IP 估计几乎不可用，这就是单步估计目标的现实理由。`}`}
+['s_K','s_p','s_nn'].forEach(id=>$('#'+id).oninput=drawESS);drawESS();onRedraw(drawESS);
+
+quiz($('#quizBox'),[
+ {q:'时变 g 公式和“按 L₁ 分层再平均”的区别在于：',o:['g 公式用 Pr[l₁|a₀] 加权，分层用 Pr[l₁]','g 公式不需要数据','没有区别'],a:0,w:'用 a₀ 世界里的 L₁ 分布，才能保留 A₀ 经过 L₁ 的效应。'},
+ {q:'时变 IP 权重是：',o:['每一步处理概率倒数的连乘','只用第一步的权重','所有权重的平均'],a:0,w:'W = Π 1/f(A_k | 过去)。'},
+ {q:'用 IP 加权评估一个动态策略时，要先：',o:['只保留实际处理与策略一致的人，再加权','删掉所有接受过处理的人','不加权直接平均'],a:0,w:'书里叫人为删失（与 clone-censor-weight 同理）。'},
+ {q:'你论文估计的 V¹ˢᴰ(π) 和全程部署 V(π) 的关系是：',o:['完全相同','不同的干预：V¹ˢᴰ 只有一步按 π','V¹ˢᴰ 总是更大'],a:1,w:'两者可能对策略排序不同。'},
+ {q:'60 步全程连乘 IP 权重的主要问题是：',o:['偏差太大','方差随步数指数增长，有效样本量迅速趋近 0','计算太慢'],a:1,w:'这是选择单步估计目标的理由。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

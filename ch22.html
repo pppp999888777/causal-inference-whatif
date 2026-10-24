@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 22 章 目标试验模拟 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="22">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 III 部分 · 第 22 章 · 第二轮</div>
+    <h1>目标试验模拟</h1>
+    <p class="lead">全书的收尾。用观察数据回答因果问题之前，先写下你<b>想做却没做</b>的那个随机试验：谁有资格、比较哪些策略、从什么时候开始算、看什么结局。然后让分析尽可能模仿它。很多看似高深的偏倚（不朽时间偏倚、现患用户偏倚），其实都是因为没把“时间零点”对齐。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">目标试验方案的 7 个要素</div>
+    <p class="small">纳入标准 · 处理策略 · 分配方式 · 随访起止（时间零点）· 结局 · 因果对比 · 分析计划</p>
+    <p class="small muted">时间零点：满足纳入标准、分配策略、开始随访，三者必须是同一个时刻。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s221" data-short="目标试验"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">22.1–22.3</span><h2>目标试验，以及它的两种因果对比</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>22.1 节：目标试验是一个假想的随机试验，它能回答你的因果问题。写清楚它的方案，等于把“估计目标”定义清楚（第 1、3 章的一致性）。</p>
+      <p>22.2 节：随机试验里通常有两种因果对比。<b>意向治疗效应</b>：被分配到某策略的效应，不管之后是否坚持。<b>按方案效应</b>：如果所有人都坚持分配的策略，效应会是多少。后者需要调整影响依从的时变因素，要用第 21 章的 g 方法（第 9 章已经预告过）。</p>
+      <p>22.3 节：观察数据里没有“分配”，所以意向治疗的观察类比是“<b>开始</b>某策略”的效应，按方案的类比是“开始并坚持”的效应。两者都要满足第 3 章的识别条件。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 你的模拟器真的做了目标试验</div>
+      <p>模拟器部分不是“模拟”目标试验，而是<b>真的做了</b>：同一批模拟学生被每种策略各教 60 步，相当于一个“每个人同时进入所有组”的试验，比随机分配还强（第 1 章的上帝视角）。所有学生都完全按策略执行，所以意向治疗效应和按方案效应相同。</p>
+      <p>真实日志部分才是目标试验<b>模拟</b>：你想知道“如果部署 Safe-DFKT-AG”会怎样，但日志里只有 μ。按书里的框架，应该把这部分的方案也写出来（下面的清单），尤其是时间零点。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s224" data-short="时间零点"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">22.4</span><h2>时间零点：不朽时间偏倚</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>在真正的试验里，满足纳入标准、被分配处理、开始随访，发生在同一时刻。观察研究里很容易把它们错开。</p>
+      <p>最经典的错误：把“随访期间<b>任何时候</b>开始过治疗的人”归为处理组，从入组那天开始算随访。处理组的人必须先活到开始治疗的那天，这段时间里他们“不可能”死（否则就不会被归为处理组），叫<b>不朽时间</b>。结果是：即使治疗毫无作用，处理组看起来也活得更久。</p>
+      <p>另一种错误是只纳入“已经用了一段时间药”的人（现患用户），那些早期就出问题而停药的人被排除了，属于第 8 章的选择偏倚。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>一个毫无作用的治疗，看起来却能救命</h3></div>
+      <p class="small muted">10000 人随访 24 个月，每月死亡率相同。每人有一个随机的“开始治疗时间”（可能在随访结束之后，即从不治疗）。治疗对死亡<b>没有任何影响</b>。</p>
+      <label class="ctrl"><span>每月死亡率 <output id="o_md"></output></span><input type="range" id="s_md" min="0.005" max="0.05" step="0.005" value="0.02"></label>
+      <div class="bars" id="itBars"></div>
+      <p class="small" id="itNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s225" data-short="统一分析"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">22.5</span><h2>统一的分析方法：克隆、删失、加权</h2></div>
+  <div class="prose">
+    <p>如果要比较的策略在时间零点上无法区分（比如“诊断后 3 个月内开始治疗” vs “不在 3 个月内开始”，在第 0 天两者看起来都还没治疗），书里推荐<b>克隆—删失—加权</b>：</p>
+    <p><b>1. 克隆</b>：把每个人复制成两份，每份分到一个策略。<b>2. 删失</b>：一旦某份克隆的实际行为偏离了它的策略，就在那一刻把它删失。<b>3. 加权</b>：这种删失是“有信息的”（依赖于当时的状态），用第 8、21 章的删失 IP 权重调整。</p>
+    <p>它和第 21 章“评估动态策略时只保留与策略一致的人再加权”是同一件事。对你的论文而言：在日志上评估一个出题策略 π，本质上就是对每个学生克隆一份“按 π 走”的版本，在日志动作偏离 π 的那一步删失，再加权。60 步下几乎每个克隆都会很快被删失，这就是第 21 章实验台 3 里有效样本量崩溃的另一种说法。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="方案清单"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你论文的目标试验方案：一张检查清单</h2></div>
+  <p class="small muted" style="margin-bottom:10px">点一下标记“论文里已经写清楚”。只保存在你自己的浏览器里。</p>
+  <div class="tbl-wrap panel">
+    <table id="ttTbl"></table>
+  </div>
+  <p class="small" id="ttNote" style="margin-top:8px"></p>
+</div></section>
+
+<section class="ch" id="wrap" data-short="全书总结"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">END</span><h2>全书总结：一张图读完 22 章</h2></div>
+  <div class="tbl-wrap panel">
+    <table>
+      <thead><tr><th>问题</th><th>书里的答案</th><th>章节</th><th>你的论文</th></tr></thead>
+      <tbody>
+        <tr><td>想知道什么？</td><td>潜在结果的对比 E[Y<sup>g</sup>] − E[Y<sup>g′</sup>]，处理和人群要定义清楚</td><td>1、3、4、19、22</td><td>模拟学生在两种出题策略下的 NLG 差</td></tr>
+        <tr><td>能从数据里得到吗？</td><td>序贯可交换性、正性、一致性</td><td>2、3、19</td><td>模拟器：靠设计成立；真实日志：存疑</td></tr>
+        <tr><td>偏倚从哪来？</td><td>混杂（共同原因）、选择（对撞点）、测量误差</td><td>6–9</td><td>课堂混杂、只看有后续记录的步、r<sub>gain</sub> 均值回归</td></tr>
+        <tr><td>用什么方法？</td><td>IP 加权、标准化（g 公式）、G 估计，及其双重稳健组合</td><td>12–15、21</td><td>单步交叉拟合 DR = IP 加权 + 标准化</td></tr>
+        <tr><td>处理随时间变化呢？</td><td>传统回归失效，必须用 g 方法</td><td>20、21</td><td>估计目标选 V¹ˢᴰ 绕开反馈，代价是不等于 V(π)</td></tr>
+        <tr><td>有限样本呢？</td><td>置信区间、交叉拟合、警惕极端权重</td><td>10、12、18</td><td>5 种子 × 4 数据集、截断在 20、2 折交叉拟合</td></tr>
+        <tr><td>模型的预测指标说明什么？</td><td>辅助模型的预测精度不等于它在因果任务上的价值</td><td>11、15</td><td>论文的主结论：AUC、校准保住了，决策没变好</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1：不朽时间偏倚 ---------- */
+function drawIT(){const h=+$('#s_md').value;$('#o_md').textContent=h.toFixed(3);const r=rng(22);
+  let evN=0,nN=0,evT=0,nT=0,ptT=0,dT=0,ptU=0,dU=0;
+  for(let i=0;i<10000;i++){let death=null;for(let m=1;m<=24;m++)if(r()<h){death=m;break}
+    const start=1+Math.floor(r()*36);// 第 start 个月开始治疗；>24 即随访内从不治疗
+    const ever=start<=24&&(death===null||death>start);
+    if(ever){nT++;if(death!==null)evT++}else{nN++;if(death!==null)evN++}
+    const end=death??24;for(let m=1;m<=end;m++){const treated=m>start;if(treated){ptT++;if(death===m)dT++}else{ptU++;if(death===m)dU++}}}
+  const naive=(evT/nT)/(evN/nN),tv=(dT/ptT)/(dU/ptU);
+  barList($('#itBars'),[['真实风险比',1,'--muted'],['“曾经治疗” vs “从未治疗”',naive,'--w1'],['按人-月计算的时变比较',tv,'--accent']],{min:0,max:1.4,fmt:v=>v.toFixed(2)});
+  $('#itNote').innerHTML=`“曾经治疗”组 ${nT} 人，死亡比例 ${(evT/nT*100).toFixed(1)}%；“从未治疗”组 ${(evN/nN*100).toFixed(1)}%。治疗毫无作用，朴素比较却显示风险降低了 ${((1-naive)*100).toFixed(0)}%。把“是否在治疗中”当作每个月更新的时变状态，时间零点就对齐了。`}
+$('#s_md').oninput=drawIT;drawIT();
+
+/* ---------- 目标试验清单 ---------- */
+const TT=[
+ ['纳入标准','模拟器：按数据集拟合的 12 技能学生；真实日志：子采样 5000 人、截断到最近 500 次','“截断到最近 500 次”意味着长期用户的时间零点被推迟到了很晚。纳入标准若要求“至少有 N 次交互”，就用到了未来的信息。'],
+ ['处理策略','DKT + closest-to-0.7、Safe-DFKT-AG（两种检查点）、Random、Uncertainty-0.5 等','每个策略要精确到检查点、温度、部署时取 argmax 还是采样（第 3 章的处理版本）。'],
+ ['分配方式','模拟器：每个学生被每种策略各教一遍；真实日志：无随机分配，以 μ̂ 加权','真实日志部分要说明依赖的识别假设（第 3 章）。'],
+ ['时间零点与随访','模拟器：第 0 步开始，随访 60 步；真实日志：每个决策点 t 都是一个“小试验”的起点','单步 DR 相当于在每个 t 上做一个序贯试验；要说明每个小试验的随访长度（到下一次练同一技能为止）。'],
+ ['结局','NLG（全部技能的前后测）、steps-to-mastery、retention','STM 有行政删失（第 17 章）；NLG 覆盖全部技能，偏向“广覆盖”的策略。'],
+ ['因果对比','模拟器：全程部署的 E[NLG^π] 差；真实日志：V¹ˢᴰ(π)','两种对比是不同的估计目标（第 21 章），不要混在一个句子里。'],
+ ['分析计划','配对 Wilcoxon / t / bootstrap，Holm 校正；交叉拟合 DR，截断在 20','说明检验族的范围、单元是种子 × 数据集（第 10 章）。'],
+];
+let done={};try{done=JSON.parse(localStorage.getItem('tt22')||'{}')}catch(e){done={}}
+function drawTT(){
+  $('#ttTbl').innerHTML='<thead><tr><th>要素</th><th>你的论文</th><th>要注意的地方</th><th>已写清楚</th></tr></thead><tbody>'+TT.map(([k,v,n],i)=>`<tr><td><b>${k}</b></td><td>${v}</td><td class="small">${n}</td><td><button class="btn ${done[i]?'on':''}" data-i="${i}" aria-pressed="${!!done[i]}">${done[i]?'已写':'未写'}</button></td></tr>`).join('')+'</tbody>';
+  const c=TT.filter((_,i)=>done[i]).length;$('#ttNote').textContent=`已标记 ${c} / ${TT.length} 项。`}
+$('#ttTbl').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;const i=b.dataset.i;done[i]=!done[i];try{localStorage.setItem('tt22',JSON.stringify(done))}catch(e){}drawTT()});drawTT();
+
+quiz($('#quizBox'),[
+ {q:'时间零点要求哪三件事发生在同一时刻？',o:['满足纳入标准、分配策略、开始随访','入组、死亡、出院','测量、分析、发表'],a:0,w:'三者错开就会产生不朽时间偏倚或选择偏倚。'},
+ {q:'把随访中“曾经开始治疗”的人归为处理组，会导致：',o:['不朽时间偏倚，让治疗看起来有益','没有偏倚','让治疗看起来有害'],a:0,w:'处理组的人必须活到开始治疗那天。'},
+ {q:'克隆—删失—加权用于：',o:['策略在时间零点无法区分的情况','样本太小','测量误差'],a:0,w:'每人克隆到每个策略，偏离时删失，再用 IP 权重调整。'},
+ {q:'你论文的模拟器部分是：',o:['目标试验模拟','真的做了目标试验（每个学生被每种策略各教一遍）','观察性研究'],a:1,w:'所以模拟器 NLG 可以作为真值。'},
+ {q:'在日志上评估出题策略 π，等价于：',o:['对每个学生克隆一份按 π 走的版本，偏离时删失再加权','直接比较平均奖励','只看第一步'],a:0,w:'这也解释了长步数下有效样本量的崩溃。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 18 章 因果推断的变量选择 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="18">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 18 章 · 第二轮</div>
+    <h1>因果推断的变量选择</h1>
+    <p class="lead">预测问题里，变量越能提高预测精度越好。因果问题里不是这样：有的变量调整了会引入偏倚，有的会放大偏倚，有的只会增加方差。这一章讲怎么选调整变量，以及当辅助模型用机器学习来估计时，为什么需要<b>双重稳健 + 交叉拟合</b>。你论文里的 2 折交叉拟合就出自这里。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">该不该调整</div>
+    <p class="small"><span class="ok-t">调整</span>：混杂因子；只影响结局的变量（降方差）。</p>
+    <p class="small"><span class="bad-t">别调整</span>：对撞点、中介、处理的后代、工具变量（升方差、放大偏倚）。</p>
+    <p class="small muted">靠的是因果知识，不是数据驱动的变量筛选。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s181" data-short="五类变量"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">18.1–18.2</span><h2>不同的目标，不同的选法</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>做预测时，逐步回归、LASSO 这些“让数据自己选”的方法很合理。做因果推断时，它们会出错：一个变量和处理、结局都高度相关，可能是混杂因子，也可能是对撞点或中介，单看数据分不出来。</p>
+      <p>书里列出了几类“调整了反而坏事”的变量：</p>
+      <p><b>对撞点</b>（包括 M 结构）：打开本来阻断的路径（第 7 章）。<b>中介</b>：拿掉了一部分因果效应。<b>处理的后代</b>：可能二者兼有。<b>工具变量</b>（只影响处理）：不引入偏倚，但增加方差；如果还有未测量混杂，会<b>放大</b>偏倚（第 15 章）。</p>
+      <p>相反，<b>只影响结局</b>的变量（结局的预测因子）不是混杂因子，调整它不影响偏倚，却能降低方差，值得放进去。</p>
+      <p>书的结论：变量选择必须依赖关于因果结构的知识；没有哪种纯数据驱动的方法能替你分出混杂因子和对撞点。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>五类变量，选哪些放进回归</h3></div>
+      <p class="small muted">线性模拟，1000 人，重复 150 次。C 混杂因子；Z 工具（只影响 A）；P 只影响 Y；M 中介；K 是 A 和 Y 的共同结果；U 是未测量混杂（可开关）。A 对 Y 的真实总效应 = 1。</p>
+      <div class="row" id="vsBtns"></div>
+      <div class="row"><span class="small muted">未测量混杂 U：</span><button class="btn" id="vu_no">没有</button><button class="btn on" id="vu_yes">有</button></div>
+      <div class="stats" id="vsStats"></div>
+      <p class="small" id="vsNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s183" data-short="机器学习"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">18.3–18.5</span><h2>机器学习估计辅助模型：双重稳健 + 交叉拟合</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>L 维度很高时，很难手写正确的处理模型和结局模型，自然会想到用机器学习（随机森林、神经网络等）来估计它们。书里指出两个问题：</p>
+      <p><b>1. 直接代入有偏。</b>机器学习模型的预测带着正则化偏差，把它直接代入标准化公式，偏差会原样传到因果效应的估计上，而且置信区间没法算。双重稳健估计的好处是：它的误差大致是“处理模型误差 × 结局模型误差”，两个都只要“还算准”，乘积就很小。</p>
+      <p><b>2. 过拟合会坏事。</b>如果用同一批数据既拟合辅助模型、又计算效应，灵活的模型会把每个人的噪声也学进去：结局模型在训练样本上的残差几乎为 0，DR 的修正项失效，方差被严重低估，置信区间太窄。解决办法是<b>样本分割 / 交叉拟合</b>：把数据分成几折，每一折的辅助模型用其他折拟合，再在这一折上计算，最后轮换平均。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>你的 DR 用了 2 折交叉拟合：μ̂ 和 q̂ 在一折学生上拟合，用在另一折学生的策略损失上。这正是本节推荐的做法，答辩时可以直接引用：交叉拟合保证了即使辅助模型灵活，DR 的修正项仍然有效。注意分折是按<b>学生</b>分，而不是按交互记录分，否则同一学生的记录会同时出现在两边，交叉拟合就形同虚设。论文写的是按学生分，这是对的。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>过拟合的结局模型：要不要交叉拟合</h3></div>
+      <p class="small muted">400 人，重复 80 次，真实效应 = 1。结局模型用 k 近邻回归（k 越小越容易过拟合）；处理模型用逻辑回归。看 AIPW 估计的 95% 置信区间覆盖率。</p>
+      <label class="ctrl"><span>近邻个数 k <output id="o_kn"></output></span><input type="range" id="s_kn" min="1" max="40" step="1" value="1"></label>
+      <div class="tbl-wrap"><table id="cfTbl"></table></div>
+      <p class="small" id="cfNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="你的特征"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>μ̂ 和 q̂ 里该放哪些历史特征</h2></div>
+  <div class="tbl-wrap panel">
+    <table>
+      <thead><tr><th>候选特征</th><th>它在因果图里的角色</th><th>放进 μ̂？</th><th>放进 q̂？</th></tr></thead>
+      <tbody>
+        <tr><td>各技能的历史正确率、练习次数</td><td>混杂因子：影响日志策略选什么，也影响之后的增益</td><td class="ok-t">放</td><td class="ok-t">放</td></tr>
+        <tr><td>当前步的作答 y<sub>t</sub></td><td>混杂因子，同时是 r<sup>gain</sup> 的组成部分（第 9 章）</td><td class="ok-t">放</td><td class="ok-t">放</td></tr>
+        <tr><td>只影响日志策略的系统因素（如题库轮换的序号、时段）</td><td>工具类变量</td><td class="bad-t">最好不放</td><td class="muted">无所谓</td></tr>
+        <tr><td>学生的整体能力代理（总正确率）</td><td>结局的预测因子，也可能影响选题</td><td class="ok-t">放</td><td class="ok-t">放</td></tr>
+        <tr><td>第 t 步之后的任何信息</td><td>处理的后代</td><td class="bad-t">不放</td><td class="bad-t">不放</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>第 II 部分结束。下一章：时变处理</b>第 III 部分是全书最难、也和你论文最相关的部分。60 步的出题序列就是一个时变处理，你的策略 π 就是一个动态策略。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1 ---------- */
+const sel=new Set(['C']);let vU=true;
+function drawVS(){
+  $('#vsBtns').innerHTML='<span class="small muted">调整：</span>'+['C','Z','P','M','K'].map(n=>`<button class="btn ${sel.has(n)?'on':''}" data-n="${n}">${n}</button>`).join('');
+  const r=rng(181);const est=[];
+  for(let rep=0;rep<150;rep++){const X=[],y=[];
+    for(let i=0;i<1000;i++){const C=randn(r),Z=randn(r),P=randn(r),U=vU?randn(r):0;const A=C+1.2*Z+(vU?.8*U:0)+randn(r);const M=.5*A+randn(r);const Y=.5*A+1*M+C+1.5*P+(vU?.8*U:0)+randn(r);const K=A+Y+randn(r);
+      const v={C,Z,P,M,K};X.push([1,A,...[...sel].map(n=>v[n])]);y.push(Y)}
+    est.push(linreg(X,y)[1])}
+  const b=mean(est)-1,s=sd(est);
+  $('#vsStats').innerHTML=`<div class="stat"><div class="k">平均估计</div><div class="v">${mean(est).toFixed(3)}</div></div><div class="stat"><div class="k">偏差</div><div class="v">${fmt(b,3)}</div></div><div class="stat"><div class="k">标准差</div><div class="v">${s.toFixed(4)}</div></div>`;
+  const tips=[];if(!sel.has('C'))tips.push('没调整混杂因子 C');if(sel.has('M'))tips.push('调整了中介 M，拿掉了经过 M 的那部分效应');if(sel.has('K'))tips.push('调整了对撞点 K');if(sel.has('Z'))tips.push(vU?'调整了工具 Z：标准差变大，U 带来的偏差被放大':'调整了工具 Z：标准差变大');if(sel.has('P'))tips.push('调整了 P：标准差变小');
+  $('#vsNote').textContent=(tips.length?tips.join('；')+'。':'')+(vU?'有 U 时任何调整集都去不掉它带来的偏差，最好的选择是 C + P。':'没有 U 时，C + P 无偏且方差最小。')}
+$('#vsBtns').addEventListener('click',e=>{const b=e.target.closest('button[data-n]');if(!b)return;const n=b.dataset.n;sel.has(n)?sel.delete(n):sel.add(n);drawVS()});
+segmented(['vu_no','vu_yes'],id=>{vU=id==='vu_yes';drawVS()});drawVS();
+
+/* ---------- 实验台 2：交叉拟合 ---------- */
+const CF=(()=>{const r=rng(183);const sets=[];for(let k=0;k<80;k++){const rows=[];for(let i=0;i<400;i++){const l1=r(),l2=r();const a=r()<expit(-1+2*l1+1.0*l2)?1:0;const y=a+2*Math.sin(3*l1)+2*l2*l2+randn(r)*.8;rows.push([l1,l2,a,y])}sets.push(rows)}return sets})();
+function knnPred(train,x,k){const d=train.map(t=>[(t[0]-x[0])**2+(t[1]-x[1])**2,t[3]]).sort((a,b)=>a[0]-b[0]);let s=0;for(let i=0;i<Math.min(k,d.length);i++)s+=d[i][1];return s/Math.min(k,d.length)}
+function aipw(rows,fitRows,k){const F=d=>[1,d[0],d[1]];const b=logreg(fitRows.map(F),fitRows.map(d=>d[2]),10);
+  const T=fitRows.filter(d=>d[2]),C=fitRows.filter(d=>!d[2]);
+  return rows.map(d=>{const e=clamp(expit(dot(F(d),b)),.02,.98);const q1=knnPred(T,d,k),q0=knnPred(C,d,k);return q1-q0+(d[2]?(d[3]-q1)/e:-(d[3]-q0)/(1-e))})}
+function drawCF(){const k=+$('#s_kn').value;$('#o_kn').textContent=k;const res={no:[],cf:[]};
+  CF.forEach(rows=>{const psi=aipw(rows,rows,k);res.no.push(psi);
+    const A=rows.filter((_,i)=>i%2===0),B=rows.filter((_,i)=>i%2===1);res.cf.push(aipw(A,B,k).concat(aipw(B,A,k)))});
+  const sum=arr=>{const est=arr.map(p=>mean(p)),se=arr.map(p=>sd(p)/Math.sqrt(p.length));const cov=est.filter((e,i)=>Math.abs(e-1)<=1.96*se[i]).length/est.length;return{m:mean(est),sd:sd(est),se:mean(se),cov}};
+  const a=sum(res.no),c=sum(res.cf);
+  $('#cfTbl').innerHTML=`<thead><tr><th></th><th>平均估计</th><th>真实标准差</th><th>报告的标准误</th><th>95% 区间覆盖率</th></tr></thead><tbody>
+   <tr><td>不分割（同一批数据）</td><td class="num">${a.m.toFixed(3)}</td><td class="num">${a.sd.toFixed(3)}</td><td class="num">${a.se.toFixed(3)}</td><td class="num ${a.cov<.9?'bad-t':''}">${(a.cov*100).toFixed(0)}%</td></tr>
+   <tr><td>2 折交叉拟合</td><td class="num">${c.m.toFixed(3)}</td><td class="num">${c.sd.toFixed(3)}</td><td class="num">${c.se.toFixed(3)}</td><td class="num">${(c.cov*100).toFixed(0)}%</td></tr></tbody>`;
+  $('#cfNote').innerHTML=k<=3?'k 很小时结局模型严重过拟合：在训练样本上残差几乎为 0，报告的标准误远小于真实的波动，区间覆盖率远低于 95%。交叉拟合把它拉了回来。':'k 较大时模型平滑，过拟合问题变小，两种做法差别缩小。把 k 拉回 1 对比。'}
+$('#s_kn').onchange=drawCF;$('#s_kn').oninput=()=>$('#o_kn').textContent=$('#s_kn').value;drawCF();
+
+quiz($('#quizBox'),[
+ {q:'用 LASSO 从 200 个变量中挑出和结局最相关的作为调整集，主要问题是：',o:['计算太慢','数据无法区分混杂因子、对撞点和中介','LASSO 有偏'],a:1,w:'变量选择需要因果知识。'},
+ {q:'只影响结局、不影响处理的变量 P：',o:['不该调整','调整它不引入偏倚，还能降低方差','会放大偏倚'],a:1,w:'它解释掉结局里的一部分噪声。'},
+ {q:'为什么用灵活的机器学习模型估计辅助模型时要交叉拟合？',o:['加快计算','防止在同一样本上过拟合导致修正项失效、置信区间过窄','让模型更准'],a:1,w:'样本外的辅助模型保证 DR 的理论性质。'},
+ {q:'你论文的交叉拟合按学生分折而不是按交互记录分，原因是：',o:['学生更少','同一学生的记录高度相关，按记录分会泄漏信息','没有原因'],a:1,w:'按记录分时，同一学生会同时出现在拟合折和估计折中。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

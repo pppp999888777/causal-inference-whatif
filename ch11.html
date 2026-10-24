@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 11 章 为什么需要模型 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="11">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 11 章 · 选读</div>
+    <h1>为什么需要模型</h1>
+    <p class="lead">第 II 部分的入口章。它暂时放下因果，只讨论一个统计问题：怎么从样本估计条件均值 E[Y|A=a]。处理只有两三个取值时，样本平均就够了；处理是连续的剂量时，大多数剂量根本没人接受过，必须用模型“插值”。模型越平滑，偏差越可能大、方差越小。这就是贯穿后面所有章节的<b>偏差—方差权衡</b>。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">一句话</div>
+    <p>数据不会自己说话。<b>模型就是我们替数据补上的假设</b>，估计结果对这些假设有多敏感，必须心里有数。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s111" data-short="数据不会说话"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">11.1–11.3</span><h2>从二分处理到连续剂量</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里的例子：16 名 HIV 感染者，处理 A 是一种药，结局 Y 是治疗后的 CD4 细胞计数。</p>
+      <p><b>A 二分</b>（用 / 不用）：E[Y|A=1] 就是用药那 8 人的平均。这是<b>非参数</b>估计，没有任何假设。</p>
+      <p><b>A 有 4 个取值</b>（无、低、中、高剂量）：每个剂量 4 人，还是能直接平均，只是每个平均更不准。</p>
+      <p><b>A 连续</b>（0–100 毫克）：16 个人，每人一个不同的剂量。想知道 E[Y|A=90]，可能根本没人恰好吃了 90 毫克。这时只能假设一个模型，比如 <span class="m">E[Y|A] = θ₀ + θ₁A</span>，用全部 16 个人估计两个参数，再代入 A = 90。</p>
+      <p>模型的本质是“<b>借用</b>”：用吃了 80 毫克和 100 毫克的人的信息，推断 90 毫克会怎样。代价是：如果真实的关系不是直线，估计就有偏差（<b>模型误设</b>）。</p>
+      <p><b>饱和模型</b>：参数个数等于要估计的均值个数（比如 A 二分时 <span class="m">θ₀ + θ₁A</span> 正好对应两个均值），它不施加任何限制，等价于非参数估计。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>16 个点，你选模型的复杂度</h3></div>
+      <p class="small muted">真实关系（虚线）是一条先升后平的曲线，这在现实中看不到。每次随机抽 16 个人，用多项式回归拟合，预测 A = 90 时的 E[Y|A]。</p>
+      <label class="ctrl"><span>多项式次数 <output id="o_deg"></output></span><input type="range" id="s_deg" min="0" max="7" step="1" value="1"></label>
+      <div class="row"><button class="btn" id="b_new">换一批 16 个人</button></div>
+      <canvas id="fitCv" height="230" aria-label="16 个点和拟合曲线"></canvas>
+      <div class="legend"><span><i style="background:var(--muted)"></i>真实关系</span><span><i style="background:var(--accent)"></i>拟合曲线</span><span><i style="background:var(--w1)"></i>A=90 的预测</span></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s114" data-short="偏差方差"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">11.4–11.5</span><h2>平滑与偏差—方差权衡</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>直线（1 次）很“平滑”：只用 2 个参数，预测很稳定，但真实关系弯曲时它系统性地错（偏差大）。高次多项式不太平滑：能贴住每个点，但换一批人曲线就剧烈变化（方差大），在数据稀疏的地方尤其离谱。</p>
+      <p>没有哪个模型“正确”。书里的观点：<b>几乎所有模型都是错的</b>，我们能做的是选一个偏差和方差都可以接受的，并检查结论对模型选择有多敏感。</p>
+      <p>这对因果推断特别重要：第 12–15 章的每一种方法都需要模型（处理模型、结局模型），模型误设就会把偏差带进因果效应的估计里。双重稳健的价值正在于：两个模型只要有一个对，就够了。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>你的方法里有三个“模型”：倾向模型 μ̂、结局模型 q̂、以及 KT 骨干本身。它们都是在用模型在历史 h<sub>t</sub> 之间借用信息。策略头 g 有 16,753 个参数，这是一个很灵活（低偏差、高方差）的模型，而它恰恰是论文发现的 93% 差距的来源：高方差的部件在一个有偏的训练目标（DR 估计对所有策略都偏高）上被优化，很容易学到“作弊”。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>每种复杂度重复 300 次</h3></div>
+      <p class="small muted">对每个多项式次数，重复抽 300 批 16 个人，看 A = 90 的预测离真值多远。</p>
+      <div class="tbl-wrap"><table id="bvTbl"></table></div>
+      <p class="small" id="bvNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：IP 加权与边际结构模型</b>用书里的 NHEFS 数据（戒烟对体重的影响），第一次在真实数据上用模型估计因果效应。和你的 IPS / SNIPS 直接对应。</div>
+</div></section>
+</main>
+
+<script>
+const truth=a=>150+300*(1-Math.exp(-a/30));
+function sample16(r){const pts=[];for(let i=0;i<16;i++){const a=r()*100;pts.push([a,truth(a)+randn(r)*45])}return pts}
+// 多项式最小二乘（A 先缩放到 [0,1] 以避免数值问题）
+function polyfit(pts,deg){const p=deg+1;const M=Array.from({length:p},()=>Array(p+1).fill(0));
+  pts.forEach(([a,y])=>{const x=a/100;const pw=[];for(let j=0;j<p;j++)pw.push(x**j);for(let j=0;j<p;j++){for(let k=0;k<p;k++)M[j][k]+=pw[j]*pw[k];M[j][p]+=pw[j]*y}});
+  for(let j=0;j<p;j++)M[j][j]+=1e-9;
+  for(let c=0;c<p;c++){let m=c;for(let r=c+1;r<p;r++)if(Math.abs(M[r][c])>Math.abs(M[m][c]))m=r;[M[c],M[m]]=[M[m],M[c]];for(let r=0;r<p;r++)if(r!==c){const f=M[r][c]/M[c][c];for(let k=c;k<=p;k++)M[r][k]-=f*M[c][k]}}
+  const th=M.map((row,i)=>row[p]/row[i]);return a=>th.reduce((s,t,j)=>s+t*(a/100)**j,0)}
+let cur,seed=1;
+function drawFit(){const deg=+$('#s_deg').value;$('#o_deg').textContent=deg===0?'0（只用平均数）':deg;
+  const f=polyfit(cur,deg);const xs=[...Array(101).keys()];
+  lineChart($('#fitCv'),[{name:'',color:'--muted',dash:[4,3],pts:xs.map(a=>[a,truth(a)])},{name:'',color:'--accent',pts:xs.map(a=>[a,f(a)])}],{xlo:0,xhi:100,ylo:0,yhi:650,xticks:[0,25,50,75,100],yticks:[0,200,400,600],yd:0,rpad:14,xlabel:'剂量 A（毫克）'});
+  const cv=$('#fitCv'),c=cv.getContext('2d');const w=cv.clientWidth,h=+cv.getAttribute('height');const L=44,R=w-14,T=12,B=h-30;
+  const X=x=>L+x/100*(R-L),Y=y=>B-clamp(y,0,650)/650*(B-T);
+  cur.forEach(([a,y])=>{c.beginPath();c.arc(X(a),Y(y),4,0,7);c.fillStyle=css('--ink');c.fill()});
+  c.beginPath();c.arc(X(90),Y(f(90)),6,0,7);c.fillStyle=css('--w1');c.fill();
+  c.fillStyle=css('--ink');c.font='12px '+css('--f-body');c.textAlign='right';c.fillText(`预测 ${f(90).toFixed(0)}，真值 ${truth(90).toFixed(0)}`,X(90)-8,Y(f(90))-8)}
+$('#s_deg').oninput=drawFit;$('#b_new').onclick=()=>{cur=sample16(rng(seed++*53));drawFit()};cur=sample16(rng(seed++*53));drawFit();onRedraw(drawFit);
+
+(function(){const r=rng(1111);const sets=[];for(let k=0;k<300;k++)sets.push(sample16(r));const t=truth(90);
+  const rows=[0,1,2,3,5,7].map(d=>{const pr=sets.map(s=>polyfit(s,d)(90));const m=mean(pr),s=sd(pr);return[d,m-t,s,Math.sqrt((m-t)**2+s*s)]});
+  const best=rows.reduce((b,x)=>x[3]<b[3]?x:b);
+  $('#bvTbl').innerHTML='<thead><tr><th>次数</th><th>偏差</th><th>标准差</th><th>均方根误差</th></tr></thead><tbody>'+rows.map(x=>`<tr><td class="num">${x[0]}</td><td class="num">${fmt(x[1],1)}</td><td class="num">${x[2].toFixed(1)}</td><td class="num ${x===best?'hl':''}">${x[3].toFixed(1)}</td></tr>`).join('')+'</tbody>';
+  $('#bvNote').innerHTML=`次数越高，偏差越小、标准差越大。均方根误差最小的是 <b>${best[0]} 次</b>，既不是最简单的，也不是最复杂的。`})();
+
+quiz($('#quizBox'),[
+ {q:'处理 A 是二分的，E[Y|A=1] 用处理组的样本平均来估计。这是：',o:['参数估计','非参数估计','错误的'],a:1,w:'没有施加任何关于 E[Y|A] 形状的假设。'},
+ {q:'为什么连续剂量时需要模型？',o:['因为连续变量无法测量','很多剂量没有人接受过，必须在剂量之间借用信息','因为样本太大'],a:1,w:'模型通过假设形状，用相邻剂量的人推断没人接受过的剂量。'},
+ {q:'高次多项式的主要风险是：',o:['偏差大','方差大，换一批样本结果变化剧烈','计算太慢'],a:1,w:'不平滑的模型低偏差、高方差。'},
+ {q:'论文里策略头 g 有 16,753 个参数，在一个有偏的目标上被优化。从偏差—方差角度看：',o:['它是低方差的部件，很安全','它很灵活，容易拟合目标里的偏差（作弊）','参数多一定更好'],a:1,w:'灵活的部件会利用训练目标的漏洞，这是论文发现 93% 差距来自策略头的一种解读。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

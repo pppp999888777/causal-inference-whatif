@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 3 章 观察性研究 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="3">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 3 章 · 必读</div>
+    <h1>观察性研究</h1>
+    <p class="lead">没有人替你抛硬币的时候，能不能把观察数据当成一个条件随机试验来分析？可以，但要同时满足三个<b>识别条件</b>：条件可交换性、正性、一致性。这一章逐个讲它们，以及它们在你的真实日志上分别会出什么问题。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">三个识别条件</div>
+    <div class="formula">Y<sup>a</sup> ⫫ A | L <span class="c">条件可交换性：没有未测量的混杂</span></div>
+    <div class="formula">Pr[A=a|L=l] &gt; 0 <span class="c">正性：每层都有人接受每种处理</span></div>
+    <div class="formula">A=a ⇒ Y=Y<sup>a</sup> <span class="c">一致性：处理定义清楚</span></div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s31" data-short="识别条件"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3.1</span><h2>把观察性研究看成条件随机试验</h2></div>
+  <div class="prose">
+    <p>第 2 章的条件随机试验有三个好性质：在 L 的每一层里分配是随机的；每一层的分配概率都在 0 和 1 之间；处理是研究者定义好的确定动作。观察性研究里没有人保证这三点，只能<b>假设</b>它们成立。</p>
+    <p>如果三条都成立，第 2 章的标准化和 IP 加权就能原样搬过来用。书里把这三条叫<b>识别条件</b>（identifiability conditions）。任何一条不成立，就算数据无限多，也算不出因果效应。</p>
+    <p>这一章的逻辑可以记成一句话：<b>观察性研究 = 我们希望它是一个条件随机试验</b>。差距有多大，取决于三条假设有多可信。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s32" data-short="可交换性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3.2</span><h2>条件可交换性：所有影响处理和结局的因素都量到了吗</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>条件可交换性要求：在测量了的 L 的每一层里，接受处理的人和没接受的人本来的风险一样。换句话说，<b>没有未测量的混杂</b>。</p>
+      <p>真实世界里医生决定给谁移植，看的是病历上写的东西，也看病人的气色、家属意见、医生的直觉。病历里没有的那些因素如果同时影响死亡，就是未测量的混杂。</p>
+      <p>关键事实：<b>条件可交换性无法用数据检验</b>。你永远看不到对照组“如果被移植”会怎样。它只能靠领域知识来论证，第 6、7 章会用因果图把这种论证变得清楚。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里</div>
+        <p>真实日志上的 DR 需要 <span class="m">Y<sup>a</sup> ⫫ A<sub>t</sub> | h<sub>t</sub></span>：给定学生到 t 步为止的答题历史，选哪个技能和学生的潜在学习增益无关。可是 ASSISTments 的题目常由老师布置，老师知道课堂进度、学生上课表现，这些都不在 <span class="m">h<sub>t</sub></span> 里。模拟器里你自己写的日志策略只看 <span class="m">h<sub>t</sub></span>，所以这一条靠设计成立。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>有一个没测量的 U</h3></div>
+      <p class="small muted">模拟 20000 人。L 是测量了的病情，U 是没测量的“医生的直觉”。两者都让人更容易被处理，也更容易死。真实因果风险差固定为 −0.10（处理有益）。</p>
+      <label class="ctrl"><span>U 对处理和结局的影响强度 <output id="o_u"></output></span><input type="range" id="s_u" min="0" max="1" step="0.05" value="0.5"></label>
+      <div class="bars" id="uBars"></div>
+      <p class="small" id="uNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s33" data-short="正性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3.3</span><h2>正性：每一层都要有人接受每一种处理</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>正性要求：对每一个出现在人群里的 L 值，接受每一种处理的概率都大于 0。如果某个医院规定重症病人<b>一律</b>移植，那么重症病人不移植会怎样，数据里一点信息都没有，标准化公式里的 <span class="m">Pr[Y=1|L=1,A=0]</span> 根本算不出来。</p>
+      <p>书里区分两种违反：<b>结构性</b>的（规定上不可能，比如禁忌症）和<b>随机</b>的（理论上可能，只是样本里刚好没有）。即使没有严格违反，<b>接近违反</b>也很麻烦：<span class="m">Pr[A=0|L=1] = 0.01</span> 时，IP 权重是 100，少数几个人决定了整个估计。</p>
+      <p>和可交换性不同，正性<b>可以部分地用数据检查</b>：看各层里处理概率的分布、看权重的最大值。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里 · 权重截断在 20</div>
+        <p>你的论文写道：日志策略对动作空间覆盖不好时，估计器要么用高方差的重加权，要么依赖结局模型外推。这就是正性接近违反。ASSISTments 有 145 个技能，Junyi 有 681 个，某个历史下日志策略几乎不会选某些技能。你的做法是 <span class="m">w<sub>t</sub> = min(π/μ̂, 20)</span>：截断权重，用一点偏差换方差。右边可以亲手看这个取舍。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>接近违反正性时，IP 加权会怎样</h3></div>
+      <p class="small muted">每次模拟 1000 人，重复 200 次。重症（30%）被处理的概率由滑块决定；处理效应在两层不同（轻症 −0.05，重症 −0.30），真实平均效应 = −0.125。估计用 IP 加权（Horvitz–Thompson），可以截断权重。</p>
+      <label class="ctrl"><span>重症<b>不</b>被处理的概率 Pr[A=0|L=1] <output id="o_pos"></output></span><input type="range" id="s_pos" min="0.005" max="0.3" step="0.005" value="0.02"></label>
+      <label class="ctrl"><span>权重截断上限 <output id="o_clip"></output></span><input type="range" id="s_clip" min="2" max="200" step="1" value="200"></label>
+      <div class="stats" id="posStats"></div>
+      <canvas id="posCv" height="180" aria-label="200 次 IP 加权估计的分布"></canvas>
+      <p class="small" id="posNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s34" data-short="一致性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3.4–3.5</span><h2>一致性：处理要定义清楚，还要和数据对得上</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>一致性分两层。第一层（3.4 节）：<b>干预要定义得足够清楚</b>。书里的例子是“肥胖对死亡的效应”。让一个人不肥胖，可以靠节食、运动、手术、基因，这些做法对死亡的影响各不相同，所以“如果他不肥胖”这个反事实没法说清。相比之下，“1 月 1 日做心脏移植”就清楚得多。</p>
+      <p>第二层（3.5 节）：<b>数据里的处理要和你定义的处理对得上</b>。如果你想知道“用新药 X 的效应”，而数据里被记为“处理”的人有的吃了 X、有的吃了仿制药，那观察到的结局对应的是一个<b>处理版本的混合</b>，不是你要的 <span class="m">Y<sup>a</sup></span>。</p>
+      <p>书里的态度：完全精确的定义不可能，但要精确到“不同版本对结局的影响差不多”的程度。</p>
+      <div class="paperlink">
+        <div class="t">放到你的论文里</div>
+        <p>“用 Safe-DFKT-AG 出题”至少有三个版本：验证 BCE 检查点、决策值检查点、去掉策略头的骨干。它们的 NLG 从 <span class="m">−0.0099</span> 到 <span class="m">0.0500</span>，差得很远。论文把每个版本分开报告，就是在保证一致性。真实日志里“选技能 k”也有版本问题：同一技能下的不同题目、有没有提示，日志里可能都算作同一个动作 k。</p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>处理版本混在一起会怎样（用论文的真实数字）</h3></div>
+      <p class="small muted">假设数据里“用了 Safe-DFKT-AG”的学生其实被三个版本中的某一个教过，比例由你定。数字取自论文表格：DKT 0.0601；Safe-DFKT-AG 验证 BCE 检查点 −0.0099、决策值检查点 0.0304；Safe-DFKT 去掉策略头 0.0500。</p>
+      <label class="ctrl"><span>验证 BCE 检查点的比例 <output id="o_v1"></output></span><input type="range" id="s_v1" min="0" max="100" step="5" value="60"></label>
+      <label class="ctrl"><span>决策值检查点的比例 <output id="o_v2"></output></span><input type="range" id="s_v2" min="0" max="100" step="5" value="30"></label>
+      <p class="small muted" id="v3txt"></p>
+      <div class="bars" id="verBars"></div>
+      <p class="small" id="verNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s36" data-short="目标试验"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3.6</span><h2>目标试验：先写下你想模仿的那个随机试验</h2></div>
+  <div class="prose">
+    <p>书里建议：分析观察数据之前，先把你<b>希望能做</b>的那个随机试验（目标试验）写清楚。谁有资格参加、比较哪几种处理策略、什么时候开始随访、结局是什么、比较什么因果对比。写出来以后，三个识别条件该检查什么就一目了然了。第 22 章会把这件事讲完整。</p>
+  </div>
+  <div class="tbl-wrap panel">
+    <table>
+      <thead><tr><th>方案要素</th><th>你论文的目标试验（模拟器里真的做了）</th><th>真实日志只能“模仿”它</th></tr></thead>
+      <tbody>
+        <tr><td>参与者</td><td>按数据集拟合出的 12 技能模拟学生</td><td>日志里的真实学生，子采样到 5000 人、截断到最近 500 次</td></tr>
+        <tr><td>处理策略</td><td>DKT + closest-to-0.7 规则 vs Safe-DFKT-AG 等，每种 60 步</td><td>只观察到日志策略 μ；目标策略是反事实</td></tr>
+        <tr><td>分配</td><td>每个学生被每种策略各教一遍（比随机分配还强）</td><td>没有随机分配，用 μ̂ 加权近似</td></tr>
+        <tr><td>结局</td><td>NLG、steps-to-mastery、retention</td><td>用平滑正确率构造的 r<sup>NLG</sup><sub>t</sub></td></tr>
+        <tr><td>因果对比</td><td>E[NLG<sup>π₁</sup>] − E[NLG<sup>π₂</sup>]</td><td>一步偏离值 V<sup>1SD</sup>(π)，不是全程部署值</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>真实日志上的 DR 估计，可交换性凭什么成立？</summary><p>诚实的回答：不能保证。ASSISTments 等数据的题目分配受老师和课堂影响，h<sub>t</sub> 里没有这些信息。这正是论文用模拟器真值作为主要证据、把真实日志 OPE 作为次要证据的理由。可以补一句：模拟器里日志策略只依赖 h<sub>t</sub>，可交换性靠设计成立，所以模拟器里的 DR 偏差（DKT 0.0683、Random 0.0754）不是混杂造成的，而是估计层面的问题。</p></details>
+  <details><summary>权重截断在 20 是怎么选的？对结论有影响吗？</summary><p>截断让方差下降、偏差上升。如果截断后的偏差方向对所有策略相同，策略间的比较受影响较小；但被优化的策略（Safe-DFKT-AG）往往正是权重最大的那个。一个稳妥的补充是报告截断前后的有效样本量和对截断阈值的敏感性分析。</p></details>
+  <div class="callout" style="margin-top:18px"><b>下一章：效应修饰</b>平均效应在不同人群里可能不一样，比如你的 −0.0700 在 Junyi 上几乎为 0。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1：未测量混杂 ---------- */
+function drawU(){
+  const s=+$('#s_u').value;$('#o_u').textContent=s.toFixed(2);
+  const r=rng(31);const N=20000;let rows=[];
+  for(let i=0;i<N;i++){const L=r()<.5?1:0,U=r()<.5?1:0;const pa=expit(-0.5+1.2*L+3*s*U);const a=r()<pa?1:0;
+    const p=clamp(.15+.25*L+.4*s*U-.10*a,0,1);rows.push([L,U,a,r()<p?1:0])}
+  const rate=f=>{const g=rows.filter(f);return g.length?g.filter(x=>x[3]).length/g.length:0};
+  const naive=rate(x=>x[2])-rate(x=>!x[2]);
+  const stdL=[0,1].reduce((acc,l)=>acc+(rate(x=>x[0]===l&&x[2])-rate(x=>x[0]===l&&!x[2]))*rows.filter(x=>x[0]===l).length/N,0);
+  let stdLU=0;for(const l of[0,1])for(const u of[0,1]){const w=rows.filter(x=>x[0]===l&&x[1]===u).length/N;stdLU+=w*(rate(x=>x[0]===l&&x[1]===u&&x[2])-rate(x=>x[0]===l&&x[1]===u&&!x[2]))}
+  barList($('#uBars'),[['真实效应',-.10,'--muted'],['不调整',naive],['只调整 L',stdL],['调整 L 和 U',stdLU]],{min:-.3,max:.3,fmt:v=>fmt(v,3)});
+  $('#uNote').innerHTML=s===0?'U 没有作用时，只调整 L 就够了：条件可交换性成立。':`只调整 L 的估计差了 <b>${fmt(stdL+.10,3)}</b>。数据里看不出这个偏差，因为 U 没被记录；“调整 L 和 U”那一行现实中算不出来。`}
+$('#s_u').oninput=drawU;drawU();
+
+/* ---------- 实验台 2：正性与截断 ---------- */
+let posEst=[];
+function drawPos(){
+  const q0=+$('#s_pos').value,clip=+$('#s_clip').value;$('#o_pos').textContent=q0.toFixed(3);$('#o_clip').textContent=clip>=200?'不截断':clip;
+  const r=rng(77);posEst=[];let maxW=0,zeroCells=0;
+  for(let rep=0;rep<200;rep++){let s1=0,s0=0;const n=1000;let has=false;
+    for(let i=0;i<n;i++){const L=r()<.3?1:0;const pa=L?1-q0:.5;const a=r()<pa?1:0;const p=L?(a?.40:.70):(a?.15:.20);const y=r()<p?1:0;
+      let w=1/(a?pa:1-pa);maxW=Math.max(maxW,w);if(clip<200)w=Math.min(w,clip);if(a)s1+=w*y;else s0+=w*y;if(L&&!a)has=true}
+    if(!has)zeroCells++;posEst.push(s1/n-s0/n)}
+  const truth=.7*(-.05)+.3*(-.30);const m=mean(posEst),s=sd(posEst);
+  $('#posStats').innerHTML=`<div class="stat"><div class="k">最大权重 1/Pr[A=0|L=1]</div><div class="v">${maxW.toFixed(0)}</div></div>
+   <div class="stat"><div class="k">偏差（平均估计 − 真值）</div><div class="v">${fmt(m-truth,3)}</div></div>
+   <div class="stat"><div class="k">标准差（不同样本间）</div><div class="v">${s.toFixed(3)}</div></div>
+   <div class="stat"><div class="k">样本里一个“重症未处理”都没有</div><div class="v">${zeroCells}/200</div></div>`;
+  histogram($('#posCv'),posEst,{lo:-.8,hi:.6,bins:56,ticks:[-.8,-.4,0,.4],lines:[{v:truth,label:'真值 '+fmt(truth,3),color:'--w1'}]});
+  $('#posNote').innerHTML=`试试：先把 Pr[A=0|L=1] 拉到 0.005，估计值会散得很开；再把截断上限拉到 20 左右，分布变窄，但整体偏离真值。这就是你论文里 <span class="m">min(π/μ̂, 20)</span> 做的取舍。`}
+['s_pos','s_clip'].forEach(id=>$('#'+id).oninput=drawPos);drawPos();onRedraw(drawPos);
+
+/* ---------- 实验台 3：处理版本 ---------- */
+function drawVer(){
+  let v1=+$('#s_v1').value,v2=+$('#s_v2').value;if(v1+v2>100){v2=100-v1;$('#s_v2').value=v2}
+  const v3=100-v1-v2;$('#o_v1').textContent=v1+'%';$('#o_v2').textContent=v2+'%';$('#v3txt').textContent=`剩下 ${v3}% 是“去掉策略头”的版本。`;
+  const mix=(v1*-.0099+v2*.0304+v3*.0500)/100;
+  barList($('#verBars'),[['DKT',.0601,'--w0'],['验证 BCE 检查点',-.0099],['决策值检查点',.0304],['去掉策略头',.0500],['数据里的混合',mix,'--w1']],{min:-.02,max:.07,fmt:v=>fmt(v,4)});
+  $('#verNote').innerHTML=`混合后的“Safe-DFKT-AG 效应”是 ${fmt(mix-.0601,4)}（相对 DKT）。这个数不对应任何一个能部署的系统：明天你部署的是某一个具体版本，效果会是 ${fmt(-.0099-.0601,4)}、${fmt(.0304-.0601,4)} 或 ${fmt(.0500-.0601,4)}。`}
+['s_v1','s_v2'].forEach(id=>$('#'+id).oninput=drawVer);drawVer();
+
+quiz($('#quizBox'),[
+ {q:'下面哪个识别条件可以部分地用数据检查？',o:['条件可交换性','正性','一致性'],a:1,w:'可以看各层的处理概率和权重分布。可交换性无法用数据检验。'},
+ {q:'某医院规定重症病人一律移植。这违反了：',o:['一致性','结构性正性','可交换性'],a:1,w:'重症层里 Pr[A=0|L=1]=0，数据里完全没有“重症不移植”的信息。'},
+ {q:'“肥胖对死亡的因果效应”难以回答，主要是因为：',o:['肥胖的人太少','干预“让人不肥胖”有很多版本，没定义清楚','肥胖无法测量'],a:1,w:'这是一致性的第一层：干预要定义得足够清楚。'},
+ {q:'论文把权重截断在 20，这是在应对哪个条件接近违反？',o:['正性','一致性','可交换性'],a:0,w:'日志策略几乎不选某些动作时，π/μ̂ 会非常大，这是正性接近违反。'},
+ {q:'模拟器里条件可交换性为什么成立？',o:['因为样本大','因为日志策略是你写的，只依赖 h_t','因为用了 DR'],a:1,w:'分配机制已知且只依赖记录下来的历史，相当于一个条件随机试验。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

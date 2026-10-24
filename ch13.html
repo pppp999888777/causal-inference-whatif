@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 13 章 标准化与参数 g 公式 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="13">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 13 章 · 必读</div>
+    <h1>标准化与参数 g 公式</h1>
+    <p class="lead">IP 加权给“谁接受处理”建模；标准化给“结局怎么依赖处理和 L”建模：先拟合 E[Y|A,L]，再把每个人的 A 分别设成 1 和 0，预测、平均。在 NHEFS 上，两种方法给出差不多的答案。把两者结合，就是<b>双重稳健</b>估计：两个模型只要有一个对，估计就对。你论文里 DR 公式的两项正好对应这两种方法。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">标准化（g 公式）</div>
+    <div class="formula">E[Y<sup>a</sup>] = Σ<sub>l</sub> E[Y|A=a, L=l]·Pr[L=l]</div>
+    <div class="formula">≈ (1/n) Σ<sub>i</sub> Ê[Y | A=a, L=L<sub>i</sub>]</div>
+    <p class="small muted">L 连续时求和变成对每个人的预测求平均。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s131" data-short="四步法"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">13.1–13.3</span><h2>标准化的四步法</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>第 2 章的标准化是“分层算均值，再按 L 的分布加权”。L 有 9 个变量、很多是连续的时候，分层做不到，就用一个回归模型 <span class="m">E[Y|A,L]</span> 来代替每层的均值。书里描述的计算步骤：</p>
+      <p><b>1. 扩展数据。</b>复制两份数据：第二份里把所有人的 A 设为 0，第三份里设为 1，这两份的 Y 设为缺失。</p>
+      <p><b>2. 拟合结局模型。</b>只用原始数据（第一份）拟合 Y 对 A 和 L 的回归（书中包含平方项和 A 与吸烟强度的交互）。</p>
+      <p><b>3. 预测。</b>用模型给第二份和第三份数据里每个人预测 Y。</p>
+      <p><b>4. 平均。</b>第三份预测的平均值估计 E[Y<sup>a=1</sup>]，第二份估计 E[Y<sup>a=0</sup>]，相减得因果效应。</p>
+      <p>在 NHEFS 上，书里的标准化估计约为 <b>3.5 公斤</b>，和 IP 加权的 3.4 公斤很接近。置信区间用 bootstrap。</p>
+      <p>这个方法叫<b>参数 g 公式</b>：“g”来自 generalized，“参数”是因为 E[Y|A,L] 用了参数模型。处理随时间变化时，它会推广成第 21 章的时变 g 公式。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>四步法，看前 6 个人</h3></div>
+      <p class="small muted">模拟 NHEFS 数据（同第 12 章，真实效应 3.4 公斤）。结局模型：Y ~ A + 年龄 + 年龄² + 吸烟支数 + 基线体重。</p>
+      <div class="tbl-wrap"><table id="stdTbl"></table></div>
+      <div class="stats" id="stdStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s134" data-short="IP 还是标准化"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">13.4</span><h2>IP 加权还是标准化？两个都用：双重稳健</h2></div>
+  <div class="prose">
+    <p>IP 加权依赖处理模型 <span class="m">Pr[A|L]</span> 正确；标准化依赖结局模型 <span class="m">E[Y|A,L]</span> 正确。两个模型都不太可能完全正确。如果两种方法给出差不多的答案（如 NHEFS 的 3.4 vs 3.5），说明结论对模型设定不敏感；差很多时，至少有一个模型错了。</p>
+    <p><b>双重稳健</b>估计把两者结合起来。书里的技术点给出了实现方法，最常见的一种形式（增广 IP 加权，AIPW）是：</p>
+    <div class="formula">Ê[Y<sup>a=1</sup>] = (1/n) Σ<sub>i</sub> [ q̂(1, L<sub>i</sub>) + A<sub>i</sub>·(Y<sub>i</sub> − q̂(1, L<sub>i</sub>)) / π̂(L<sub>i</sub>) ]<br><span class="c">第一项：标准化的预测；第二项：用 IP 权重修正预测在实际处理者身上的残差</span></div>
+    <p>如果结局模型对，残差的期望是 0，第二项不影响结果；如果处理模型对，第二项正好把结局模型的偏差修正回来。<b>只要两个模型有一个对，估计就是相合的。</b></p>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>两个模型，四种对错组合</h3></div>
+    <p class="small muted" style="margin-bottom:10px">1000 人，重复 120 次。真实效应 = 2。处理和结局都依赖 L₂ 的平方；“错”的模型只放了 L₂ 的线性项。</p>
+    <div class="row" style="margin-bottom:10px">
+      <span class="small muted">处理模型：</span><button class="btn on" id="ps_ok">对</button><button class="btn" id="ps_bad">错</button>
+      <span class="small muted" style="margin-left:10px">结局模型：</span><button class="btn on" id="om_ok">对</button><button class="btn" id="om_bad">错</button>
+    </div>
+    <div class="two">
+      <div class="tbl-wrap"><table id="drTbl"></table></div>
+      <div class="verdict" id="drVerdict"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="你的 DR"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你的 DR 公式，逐项对照</h2></div>
+  <div class="formula" style="margin-bottom:14px">ψ<sub>t</sub>(θ) = Σ<sub>k</sub> π<sub>θ</sub>(k|h<sub>t</sub>)·q̂(h<sub>t</sub>, k) + w<sub>t</sub>·(r<sub>t</sub> − q̂(h<sub>t</sub>, a<sub>t</sub>)),  w<sub>t</sub> = min(π<sub>θ</sub>(a<sub>t</sub>|h<sub>t</sub>) / μ̂(a<sub>t</sub>|h<sub>t</sub>), 20)</div>
+  <div class="tbl-wrap panel" style="margin-bottom:16px">
+    <table>
+      <thead><tr><th>你论文里的部件</th><th>书里的名字</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>h<sub>t</sub></td><td>L（混杂因子）</td><td>答题历史，决定日志策略选什么，也影响之后的学习增益</td></tr>
+        <tr><td>q̂(h<sub>t</sub>, k)</td><td>结局模型 E[Y|A, L]</td><td>预测在历史 h 下练技能 k 的奖励</td></tr>
+        <tr><td>Σ<sub>k</sub> π(k|h)·q̂(h, k)</td><td>标准化 / 参数 g 公式</td><td>书里“把 A 设为 a 再预测”；你的目标是策略 π，所以按 π 的概率对所有 k 平均</td></tr>
+        <tr><td>μ̂(a|h)</td><td>处理模型 Pr[A|L]（倾向评分）</td><td>平滑的日志策略估计</td></tr>
+        <tr><td>w<sub>t</sub>·(r<sub>t</sub> − q̂)</td><td>AIPW 的修正项</td><td>用 IP 权重修正结局模型在实际动作上的残差</td></tr>
+        <tr><td>min(·, 20)</td><td>权重截断</td><td>第 3、12 章：用偏差换方差。截断后“双重稳健”性质只是近似成立</td></tr>
+        <tr><td>2 折交叉拟合</td><td>样本分割（第 18 章）</td><td>q̂、μ̂ 在另一折上拟合，避免过拟合带来的偏差</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="two">
+    <div class="paperlink">
+      <div class="t">为什么在模拟器里 DR 还是对所有策略都偏高</div>
+      <p>论文发现：DR 估计对每个策略都高于模拟器真值（DKT 偏 0.0683，Random 偏 0.0754）。按本章的逻辑，DR 只在至少一个模型正确时才无偏。模拟器里日志策略已知，μ̂ 接近正确，可是：截断破坏了 IP 那一半的无偏性；奖励 r<sup>NLG</sup> 本身是用平滑正确率构造的测量值（第 9 章），它和模拟器里的真实 NLG 不是同一个结局。所以偏差可能主要来自“r<sup>NLG</sup> 和真实 NLG 之间的差”，而不是 DR 估计量本身。这一点值得在讨论里区分开。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">把 DR 当训练目标时多出来的问题</div>
+      <p>书里的 DR 用来<b>估计</b>一个固定处理的效应。你把它当成<b>优化</b>的目标：θ 改变 π<sub>θ</sub>，从而改变 ψ<sub>t</sub>。这时即使 DR 对每个固定策略都无偏，对“被选出来的那个策略”也是偏高的（优化者的诅咒），因为优化会专门挑估计误差为正的方向走。你论文里“验证集 DR 一直上升、真实 NLG 早早见顶”就是这个现象。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s135" data-short="可交换性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">13.5</span><h2>条件可交换性要当真到什么程度</h2></div>
+  <div class="prose">
+    <p>书在这一节泼了一盆冷水：无论 IP 加权、标准化还是双重稳健，都只能调整<b>测量了的</b> L。NHEFS 里，戒烟和体重变化可能都受饮食习惯、心理状态、遗传因素影响，而这些没有测量。所有方法给出相近的答案，只说明它们对模型设定不敏感，不说明没有未测量混杂。</p>
+    <p>对你的论文：模拟器里不存在这个问题，因为日志策略只看 h<sub>t</sub>；真实日志上就得面对它（见第 3 章）。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：G 估计</b>第三种 g 方法。它直接给“处理的效应”建模，而不是给结局或处理建模。它的 “blip” 概念和你的“一步偏离”很像。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 实验台 1：四步法 ---------- */
+const NH=(()=>{const r=rng(1566);const rows=[];for(let i=0;i<1566;i++){const age=25+r()*49;const wt=50+randn(r)*12+20;const cig=Math.max(1,20+randn(r)*10);
+  const za=(age-50)/12;const pa=expit(-1.5+0.5*za+0.9*za*za-0.03*(cig-20)+0.02*(wt-70));const a=r()<pa?1:0;
+  const y=2.6+3.4*a-1.4*za-1.3*za*za-0.06*(wt-70)+0.04*(cig-20)+randn(r)*5;rows.push({age,wt,cig,za,a,y})}return rows})();
+(function(){
+  const f=(d,a)=>[1,a,d.za,d.za*d.za,(d.cig-20)/10,(d.wt-70)/10];
+  const b=linreg(NH.map(d=>f(d,d.a)),NH.map(d=>d.y));
+  const p1=NH.map(d=>dot(f(d,1),b)),p0=NH.map(d=>dot(f(d,0),b));
+  $('#stdTbl').innerHTML='<thead><tr><th>#</th><th>年龄</th><th>实际 A</th><th>实际 Y</th><th>预测 Y（A 设为 1）</th><th>预测 Y（A 设为 0）</th></tr></thead><tbody>'+
+    NH.slice(0,6).map((d,i)=>`<tr><td>${i+1}</td><td class="num">${d.age.toFixed(0)}</td><td class="num">${d.a}</td><td class="num">${d.y.toFixed(1)}</td><td class="num y1">${p1[i].toFixed(2)}</td><td class="num y0">${p0[i].toFixed(2)}</td></tr>`).join('')+'<tr><td colspan="6" class="muted small">……共 1566 人</td></tr></tbody>';
+  const naive=mean(NH.filter(d=>d.a).map(d=>d.y))-mean(NH.filter(d=>!d.a).map(d=>d.y));
+  $('#stdStats').innerHTML=`<div class="stat"><div class="k">E[Y<sup>a=1</sup>] 估计（预测平均）</div><div class="v y1">${mean(p1).toFixed(2)}</div></div><div class="stat"><div class="k">E[Y<sup>a=0</sup>] 估计</div><div class="v y0">${mean(p0).toFixed(2)}</div></div>
+    <div class="stat"><div class="k">标准化估计的效应</div><div class="v">${(mean(p1)-mean(p0)).toFixed(2)} kg</div></div><div class="stat"><div class="k">直接比较</div><div class="v">${naive.toFixed(2)} kg</div></div>`})();
+
+/* ---------- 实验台 2：双重稳健 ---------- */
+let psOK=true,omOK=true;
+const DRSETS=(()=>{const r=rng(1313);const sets=[];for(let k=0;k<120;k++){const rows=[];for(let i=0;i<1000;i++){const l1=randn(r),l2=randn(r);const a=r()<expit(-.8+.5*l1+.8*l2*l2)?1:0;const y=2*a+l1+1.5*l2*l2+randn(r);rows.push([l1,l2,a,y])}sets.push(rows)}return sets})();
+function drawDR(){
+  const res={g:[],ipw:[],dr:[]};
+  DRSETS.forEach(rows=>{
+    const px=d=>psOK?[1,d[0],d[1]*d[1]]:[1,d[0],d[1]];const ox=(d,a)=>omOK?[1,a,d[0],d[1]*d[1]]:[1,a,d[0],d[1]];
+    const bp=logreg(rows.map(px),rows.map(d=>d[2]),12);const bo=linreg(rows.map(d=>ox(d,d[2])),rows.map(d=>d[3]));
+    let g1=0,g0=0,s1=0,w1=0,s0=0,w0=0,d1=0,d0=0;
+    rows.forEach(d=>{const e=clamp(expit(dot(px(d),bp)),.01,.99);const q1=dot(ox(d,1),bo),q0=dot(ox(d,0),bo);g1+=q1;g0+=q0;
+      if(d[2]){s1+=d[3]/e;w1+=1/e;d1+=q1+(d[3]-q1)/e;d0+=q0}else{s0+=d[3]/(1-e);w0+=1/(1-e);d0+=q0+(d[3]-q0)/(1-e);d1+=q1}});
+    const n=rows.length;res.g.push((g1-g0)/n);res.ipw.push(s1/w1-s0/w0);res.dr.push((d1-d0)/n)});
+  const row=(nm,a)=>{const b=mean(a)-2;return `<tr><td>${nm}</td><td class="num">${mean(a).toFixed(3)}</td><td class="num ${Math.abs(b)>.1?'bad-t':''}">${fmt(b,3)}</td><td class="num">${sd(a).toFixed(3)}</td></tr>`};
+  $('#drTbl').innerHTML=`<thead><tr><th>方法</th><th>平均估计</th><th>偏差</th><th>标准差</th></tr></thead><tbody>${row('标准化（只用结局模型）',res.g)}${row('IP 加权（只用处理模型）',res.ipw)}${row('双重稳健 AIPW',res.dr)}</tbody>`;
+  $('#drVerdict').innerHTML=psOK&&omOK?'两个模型都对：三种方法都无偏，DR 的标准差不比最好的那个大多少。':!psOK&&!omOK?'<span class="bad-t">两个都错</span>：DR 也救不了。双重稳健的意思是“两次机会”，不是“不需要模型正确”。':
+    psOK?'结局模型错了：标准化有偏，IP 加权和 DR 仍然对。':'处理模型错了：IP 加权有偏，标准化和 DR 仍然对。'}
+segmented(['ps_ok','ps_bad'],id=>{psOK=id==='ps_ok';drawDR()});segmented(['om_ok','om_bad'],id=>{omOK=id==='om_ok';drawDR()});drawDR();
+
+quiz($('#quizBox'),[
+ {q:'标准化（参数 g 公式）需要正确设定的是：',o:['处理模型 Pr[A|L]','结局模型 E[Y|A,L]','两个都要'],a:1,w:'标准化只用结局模型；IP 加权只用处理模型。'},
+ {q:'四步法里，“把所有人的 A 设成 1 再预测”对应的是：',o:['潜在结果 E[Y^{a=1}] 的估计','只看处理组的人','IP 权重'],a:0,w:'对每个人预测 A=1 时的结局，再对所有人平均。'},
+ {q:'双重稳健估计在什么时候是相合的？',o:['两个模型都对','至少有一个模型对','任何时候'],a:1,w:'两个都错时它也会有偏。'},
+ {q:'你论文 DR 公式中的 Σ_k π(k|h) q̂(h,k) 对应：',o:['IP 加权','标准化（直接法）','截断'],a:1,w:'它用结局模型预测每个动作的奖励，再按目标策略平均。'},
+ {q:'把 DR 当成训练目标而不是估计工具，会多出什么问题？',o:['没有新问题','优化者的诅咒：被选出的策略的估计系统性偏高','计算量变小'],a:1,w:'优化会专挑估计误差为正的方向。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

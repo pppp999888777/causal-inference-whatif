@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 7 章 混杂 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="7">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 I 部分 · 第 7 章 · 必读</div>
+    <h1>混杂</h1>
+    <p class="lead">混杂就是处理和结局有共同原因，在图上表现为一条从 A 出发、箭头指向 A 的开着的<b>后门路径</b>。这一章给出判断“调整哪些变量才对”的<b>后门准则</b>，并说明为什么“和处理有关、和结局有关”的传统混杂因子定义会出错。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">后门准则：变量集 L 合格，当且仅当</div>
+    <p class="small"><b>1.</b> L 阻断了 A 和 Y 之间所有的后门路径；</p>
+    <p class="small"><b>2.</b> L 里没有 A 的后代。</p>
+    <div class="formula">满足 ⇒ Y<sup>a</sup> ⫫ A | L</div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s71" data-short="结构"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">7.1–7.2</span><h2>混杂的结构：开着的后门路径</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>A 和 Y 之间的关联有两个来源：A → … → Y 的因果路径，以及 A ← … → Y 这样以指向 A 的箭头开头的<b>后门路径</b>。后门路径带来的关联就是混杂。</p>
+      <p>书里的常见例子：<b>适应症混杂</b>，医生更倾向于给病重的人用药，病情同时影响死亡；<b>健康使用者偏倚</b>，坚持吃保健品的人本来就更注重健康。</p>
+      <p>关键联系：如果没有共同原因，后门路径都不存在，就有无条件可交换性（随机试验的情形）。如果有共同原因，但测量了足够的变量 L 来阻断所有后门路径，就有条件可交换性。<b>后门准则把第 3 章那个“无法检验的假设”变成了一个可以对着图讨论的问题。</b></p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里</div>
+      <p>真实日志上，选题 A 和学习增益 Y 之间的后门路径至少有两条：<span class="m">A ← H ← U → Y</span>（能力通过历史影响选题），<span class="m">A ← C → Y</span>（课堂和老师）。μ̂ 只用 H，能关上第一条，关不上第二条。第 6 章的实验台 2 可以画出来看。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s74" data-short="后门准则"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">7.3–7.4</span><h2>该调整谁：后门准则 vs 传统定义</h2></div>
+  <div class="prose">
+    <p>传统上说一个变量是混杂因子，要满足三条：和处理有关；在处理组之外和结局有关；不在因果路径上。书里指出这个定义<b>既不必要也不充分</b>。最经典的反例是 <b>M 结构</b>：Z 有两个没测量的原因 U1、U2，U1 影响 A，U2 影响 Y。Z 和 A 有关，和 Y 也有关，但 <span class="m">A ← U1 → Z ← U2 → Y</span> 这条路本来被对撞点 Z 堵着。调整 Z 反而把它打开了。</p>
+    <p>所以书里的立场是：<b>不要问“这个变量是不是混杂因子”，要问“这组变量能不能阻断所有后门路径”。</b>“混杂因子”只是“可以用来减少混杂的变量”的简称。</p>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>选一组调整变量，看它合不合格、估计偏多少</h3></div>
+    <p class="small muted" style="margin-bottom:8px">线性模拟 20000 人。L 是真混杂因子；Z 处在 M 结构中间；M 是中介（A → M → Y）；D 是 A 和 Y 的共同结果。U1、U2 没测量。A 对 Y 的真实总效应 = 直接 0.5 + 经过 M 的 0.8 × 0.5 = <b>0.9</b>。用回归 Y ~ A + 调整集，取 A 的系数。</p>
+    <div class="row" style="margin-bottom:10px" id="adjBtns"></div>
+    <div class="two">
+      <div id="bdDag"></div>
+      <div class="stack">
+        <div class="stats" id="bdStats"></div>
+        <div class="verdict" id="bdVerdict"></div>
+        <div class="tbl-wrap"><table id="bdTbl"></table></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s75" data-short="SWIG"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">7.5</span><h2>单一世界干预图（SWIG）</h2></div>
+  <div class="prose">
+    <p>普通 DAG 里没有潜在结果 Y<sup>a</sup> 这个节点，所以“Y<sup>a</sup> ⫫ A | L”只能间接推出来。SWIG 的做法是把处理节点劈成两半：左半是自然取值 A（还会受 L 影响），右半是干预设定的值 a（之后的变量都换成它们的潜在版本，比如 Y<sup>a</sup>）。劈开以后，A 和 Y<sup>a</sup> 都是图里的节点，用 d-分离就能直接读出它们是否独立。</p>
+    <p>对你的论文：SWIG 在第 19–21 章处理时变策略时更有用，那时每一步的选题都要劈开，图会清楚地显示“一步偏离”和“全程部署”劈的是不同的节点。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s76" data-short="调整方法"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">7.6</span><h2>怎么调整，以及调整不了的时候</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>两类方法。<b>g 方法</b>：IP 加权、标准化、G 估计（第 12–14 章），估计整个人群的边际效应，处理时变混杂也不会出错。<b>传统方法</b>：分层、匹配、回归，估计条件效应，碰到时变处理会出错（第 20 章）。</p>
+      <p>没能测量足够的混杂因子时，书里提到几个替代思路：<b>前门准则</b>（如果 A 的效应全部经过一个中介 M，且 A–M、M–Y 之间都没有未调整的混杂，可以分两段识别）；<b>工具变量</b>（第 16 章）；<b>负对照</b>（找一个不可能受 A 影响的结局，如果它和 A 也有关联，说明有残余混杂）；<b>双重差分</b>。它们都把“无未测量混杂”换成了另一个同样无法检验的假设。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 负对照可以怎么用</div>
+      <p>如果想论证真实日志上的 DR 没被课堂因素严重混杂，可以找一个“负对照结局”：比如第 t 步选的技能对另一个毫不相关、之后也没练过的技能的正确率。理论上不该有效应，DR 估计如果显著不为 0，就说明有残余混杂或估计问题。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="校准之谜"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你论文里的混杂：校准和 NLG 为什么相关</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>论文发现：在 DKT 家族里，sim-ECE 和 NLG 秩相关 <span class="m">ρ = −0.57</span>。只看这个相关，会以为“校准差 → 教得差”。但 Platt 重校准（直接把 ECE 压低）只追回了 <span class="m">2.9%</span> 的 NLG 差距；在数据集内，NLG 差和 sim-ECE 差无关（斜率 p = 0.83）。</p>
+      <p>论文的解释是一个<b>共同原因</b>：策略头扭曲（G）同时让 ECE 变差、让 NLG 变差。画成图就是 <span class="m">ECE ← G → NLG</span>，一个标准的叉。ECE 和 NLG 之间的相关是混杂带来的，不是因果。</p>
+      <p>Platt 重校准相当于一次<b>干预</b> do(ECE = 低)：它切断了 G → ECE 的箭头。如果 ECE → NLG 的直接效应很小，干预后 NLG 几乎不变。这是一个用干预来区分相关和因果的漂亮例子，答辩时可以直接用这个语言讲。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>相关很强，干预却没用</h3></div>
+      <div id="calDag"></div>
+      <label class="ctrl"><span>ECE 对 NLG 的<b>真实</b>直接效应 <output id="o_ce"></output></span><input type="range" id="s_ce" min="0" max="1" step="0.05" value="0.05"></label>
+      <canvas id="calCv" height="200" aria-label="模拟训练运行的 ECE 和 NLG 散点图"></canvas>
+      <div class="legend"><span><i style="background:var(--accent)"></i>原始运行</span><span><i style="background:var(--w1)"></i>重校准之后</span></div>
+      <div class="stats" id="calStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：选择偏倚</b>混杂来自共同原因；选择偏倚来自条件化了共同结果。两者在图上的结构完全不同，解决方法也不同。</div>
+</div></section>
+</main>
+
+<script>
+/* ---------- 最小二乘：返回 X 的系数 ---------- */
+function ols(X,y){const p=X[0].length;const A=Array.from({length:p},()=>Array(p+1).fill(0));
+  for(let i=0;i<X.length;i++)for(let j=0;j<p;j++){for(let k=0;k<p;k++)A[j][k]+=X[i][j]*X[i][k];A[j][p]+=X[i][j]*y[i]}
+  for(let c=0;c<p;c++){let m=c;for(let r=c+1;r<p;r++)if(Math.abs(A[r][c])>Math.abs(A[m][c]))m=r;[A[c],A[m]]=[A[m],A[c]];
+    for(let r=0;r<p;r++)if(r!==c){const f=A[r][c]/A[c][c];for(let k=c;k<=p;k++)A[r][k]-=f*A[c][k]}}
+  return A.map((row,i)=>row[p]/row[i])}
+
+/* ---------- 实验台 1：后门准则 ---------- */
+const E7=[['L','A'],['L','Y'],['U1','A'],['U1','Z'],['U2','Z'],['U2','Y'],['A','M'],['M','Y'],['A','Y'],['A','D'],['Y','D']];
+const P7={U1:[60,40],Z:[200,40],U2:[340,40],L:[200,130],A:[60,220],M:[200,220],Y:[340,220],D:[200,300]};
+const adj=new Set(['L']);
+const DATA7=(()=>{const r=rng(17);const rows=[];for(let i=0;i<20000;i++){const L=randn(r),U1=randn(r),U2=randn(r);const Z=U1+U2+randn(r)*.6;
+  const A=.8*L+.8*U1+randn(r);const M=.8*A+randn(r);const Y=.5*A+.5*M+.8*L+.8*U2+randn(r);const D=A+Y+randn(r);rows.push({L,Z,M,D,A,Y})}return rows})();
+function descOf(v){const s=new Set(),st=[v];while(st.length){const x=st.pop();E7.filter(e=>e[0]===x).forEach(e=>{if(!s.has(e[1])){s.add(e[1]);st.push(e[1])}})}return s}
+function drawBD(){
+  $('#adjBtns').innerHTML='<span class="small muted">调整集：</span>'+['L','Z','M','D'].map(n=>`<button class="btn ${adj.has(n)?'on':''}" data-n="${n}">${n}</button>`).join('');
+  const paths=dagPaths(E7,'A','Y',adj).filter(p=>p.backdoor);const dA=descOf('A');
+  const openBD=paths.filter(p=>p.open);const descIn=[...adj].filter(n=>dA.has(n));
+  const ok=!openBD.length&&!descIn.length;
+  const hl=new Set();openBD.forEach(p=>{for(let i=0;i<p.nodes.length-1;i++){const a=p.nodes[i],b=p.nodes[i+1];hl.add(p.dirs[i]==='out'?a+b:b+a)}});
+  dag($('#bdDag'),{w:400,h:340,label:'后门准则练习图',nodes:Object.keys(P7).map(n=>({id:n,x:P7[n][0],y:P7[n][1],t:n,cls:[n==='A'?'a':'',n==='Y'?'y':'',adj.has(n)?'cond':'',n.startsWith('U')?'hid':''].join(' ')})),edges:E7.map(([a,b])=>[a,b,hl.has(a+b)?'hl':''])});
+  const keys=[...adj];const X=DATA7.map(d=>[1,d.A,...keys.map(k=>d[k])]);const b=ols(X,DATA7.map(d=>d.Y))[1];
+  $('#bdStats').innerHTML=`<div class="stat"><div class="k">回归得到的 A 系数</div><div class="v">${b.toFixed(3)}</div></div><div class="stat"><div class="k">真实总效应</div><div class="v">0.900</div></div><div class="stat"><div class="k">偏差</div><div class="v">${fmt(b-.9,3)}</div></div>`;
+  $('#bdVerdict').innerHTML=ok?'<span class="ok-t">满足后门准则</span>：所有后门路径都阻断了，调整集里没有 A 的后代。':
+    '<span class="bad-t">不满足后门准则</span>：'+[openBD.length?`还有 ${openBD.length} 条后门路径开着（图中高亮）`:'',descIn.length?`调整了 A 的后代 ${descIn.join('、')}`:''].filter(Boolean).join('；')+'。';
+  $('#bdTbl').innerHTML='<thead><tr><th>后门路径</th><th>状态</th></tr></thead><tbody>'+paths.map(p=>`<tr><td class="num">${p.str}</td><td>${p.open?'<span class="bad-t">开</span>':`<span class="muted">阻断（${p.blocked.v}）</span>`}</td></tr>`).join('')+'</tbody>';
+}
+$('#adjBtns').addEventListener('click',e=>{const b=e.target.closest('button[data-n]');if(!b)return;const n=b.dataset.n;adj.has(n)?adj.delete(n):adj.add(n);drawBD()});drawBD();
+
+/* ---------- 实验台 2：校准与 NLG ---------- */
+dag($('#calDag'),{w:380,h:110,label:'策略头扭曲是 ECE 和 NLG 的共同原因',nodes:[{id:'G',x:190,y:28,t:'策略头扭曲 G'},{id:'E',x:70,y:88,t:'ECE'},{id:'N',x:310,y:88,t:'NLG',cls:'y'}],edges:[['G','E'],['G','N'],['E','N','bk']]});
+function drawCal(){
+  const ce=+$('#s_ce').value;$('#o_ce').textContent=ce.toFixed(2);
+  const r=rng(57);const pts=[],post=[];const base=[];
+  for(let i=0;i<60;i++){const G=r();const ece=1+3*G+randn(r)*.5;const nlg=.10-.12*G-ce*.03*(ece-1)+randn(r)*.012;
+    pts.push({x:ece,y:nlg,color:'--accent'});const ece2=1+randn(r)*.2;const nlg2=nlg-ce*.03*(ece2-ece);post.push({x:ece2,y:nlg2,color:'--w1'});base.push([ece,nlg,ece2,nlg2])}
+  const rank=a=>{const s=a.map((v,i)=>[v,i]).sort((x,y)=>x[0]-y[0]);const rk=Array(a.length);s.forEach(([,i],j)=>rk[i]=j);return rk};
+  const rx=rank(base.map(b=>b[0])),ry=rank(base.map(b=>b[1]));const mx=mean(rx),my=mean(ry);
+  const rho=rx.reduce((s,x,i)=>s+(x-mx)*(ry[i]-my),0)/Math.sqrt(rx.reduce((s,x)=>s+(x-mx)**2,0)*ry.reduce((s,y)=>s+(y-my)**2,0));
+  scatter($('#calCv'),pts.concat(post),{xlo:0,xhi:5,ylo:-.08,yhi:.14,xticks:[0,1,2,3,4,5],yticks:[-.05,0,.05,.1],yd:2,xd:0,xlabel:'ECE（%）',r:3.5});
+  const gain=mean(base.map(b=>b[3]-b[1]));
+  $('#calStats').innerHTML=`<div class="stat"><div class="k">原始运行里 ECE 和 NLG 的秩相关</div><div class="v">${fmt(rho,2)}</div></div><div class="stat"><div class="k">重校准后 NLG 的平均变化</div><div class="v">${fmt(gain,4)}</div></div>`;
+}
+$('#s_ce').oninput=drawCal;drawCal();onRedraw(drawCal);
+
+quiz($('#quizBox'),[
+ {q:'后门路径是指：',o:['从 A 出发、第一个箭头指向 A 的路径','任何经过 A 的路径','从 A 指向 Y 的路径'],a:0,w:'A ← … → Y 形式的路径，它们带来的关联就是混杂。'},
+ {q:'M 结构里的 Z（U1 → Z ← U2，U1 → A，U2 → Y）：',o:['应该调整，因为它和 A、Y 都相关','不应该调整，调整它会打开一条本来阻断的路径','调整与否无所谓'],a:1,w:'Z 是对撞点，条件化它打开 A ← U1 → Z ← U2 → Y。'},
+ {q:'为什么后门准则要求调整集里不能有 A 的后代？',o:['会降低统计效率','可能阻断部分因果效应（中介），或打开对撞路径','因为后代没测量'],a:1,w:'调整中介会拿掉经过它的那部分效应；调整 A 和 Y 的共同结果会打开对撞路径。'},
+ {q:'论文里 Platt 重校准几乎不改变 NLG，说明 ECE 和 NLG 的相关最可能是：',o:['ECE 导致 NLG','两者有共同原因（策略头扭曲）','测量误差'],a:1,w:'干预 ECE 几乎不改变 NLG，说明相关主要来自共同原因。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

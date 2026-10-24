@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 14 章 G 估计 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="14">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 14 章 · 选读</div>
+    <h1>G 估计</h1>
+    <p class="lead">第三种 g 方法。它不给结局建模（标准化），也不只给处理建模（IP 加权），而是直接给<b>处理的效应</b>建模，叫结构嵌套模型。思路很巧：如果猜对了效应 ψ，那么从每个人的结局里“减掉”处理的效应后得到的 H(ψ)，就应该和是否接受处理无关。找让它们无关的那个 ψ，就是 G 估计。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">核心想法</div>
+    <div class="formula">H(ψ) = Y − ψ·A <span class="c">猜一个 ψ，“还原”出 Y<sup>a=0</sup></span></div>
+    <div class="formula">logit Pr[A=1 | H(ψ), L] = α₀ + α₁H(ψ) + α₂L</div>
+    <p class="small">找让 <b>α₁ = 0</b> 的那个 ψ。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s142" data-short="可交换性"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">14.1–14.2</span><h2>换个角度写可交换性</h2></div>
+  <div class="prose">
+    <p>条件可交换性 <span class="m">Y<sup>a=0</sup> ⫫ A | L</span> 可以换一种说法：给定 L，<b>知道一个人的 Y<sup>a=0</sup> 不能帮你预测他是否接受了处理</b>。写成处理模型：</p>
+    <div class="formula">logit Pr[A=1 | Y<sup>a=0</sup>, L] = α₀ + α₁·Y<sup>a=0</sup> + α₂·L，可交换性 ⇔ α₁ = 0</div>
+    <p>问题是 Y<sup>a=0</sup> 对处理组的人是反事实，看不到。如果知道处理的效应，就能把它“算”回来。G 估计就是利用这一点反过来求效应。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s143" data-short="结构嵌套模型"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">14.3–14.4</span><h2>结构嵌套均值模型和秩保持</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>结构嵌套均值模型</b>（SNMM）直接描述处理组里处理的平均效应：</p>
+      <div class="formula">E[Y<sup>a</sup> − Y<sup>a=0</sup> | A=a, L] = β₁·a  （也可以加 β₂·a·L 表示效应修饰）</div>
+      <p>它只对效应建模，对 Y<sup>a=0</sup> 怎么依赖 L 不做任何假设，所以比结局回归需要的假设少。“嵌套”的含义在时变处理中才显现：每个时间点一个模型，描述“在这一刻多接受一次处理、之后都不再处理”的效应，一层套一层。</p>
+      <p><b>秩保持</b>（14.4 节）：一个更强的假设，每个人的效应都一样，<span class="m">Y<sub>i</sub><sup>a=1</sup> − Y<sub>i</sub><sup>a=0</sup> = ψ</span>。这时 <span class="m">H(ψ) = Y − ψA</span> 恰好等于每个人的 Y<sup>a=0</sup>。书里强调：G 估计并不需要秩保持，只需要均值模型正确；秩保持只是让直觉更容易理解。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · “一步偏离”就是一个 blip</div>
+      <p>时变 SNMM 的基本单位叫 <b>blip</b>：在第 m 步换一个处理、之后回到某个参照策略，结局会变多少。书里的参照策略是“之后都不处理”。</p>
+      <p>你论文的估计目标 <span class="m">V<sup>1SD</sup>(π)</span>：在第 t 步按 π 选，之后回到日志策略 μ。这正是一个以 μ 为参照策略的 blip。区别是：SNMM 把所有时间点的 blip 串起来，能还原出全程部署的效应；你的单步 DR 只估了一个 blip 的平均，没有把它们串起来。所以 V<sup>1SD</sup> 和全程部署值 V(π) 不同，第 21 章会讲怎么串。</p>
+      <p>延伸阅读：Robins（2004）把 SNMM 推广到<b>最优</b>动态策略，和强化学习里的 advantage learning（A-learning）思路相通。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s145" data-short="G 估计"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">14.5–14.6</span><h2>G 估计：搜一个让 α₁ = 0 的 ψ</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>步骤：</p>
+      <p><b>1.</b> 选一个候选值 ψ，算每个人的 <span class="m">H(ψ) = Y − ψA</span>。</p>
+      <p><b>2.</b> 拟合处理模型：A 对 H(ψ) 和 L 做逻辑回归，看 H(ψ) 的系数 α₁。</p>
+      <p><b>3.</b> 换不同的 ψ 重复。<b>α₁ = 0 的那个 ψ 就是估计值</b>。所有“α₁ = 0 不能被拒绝”（p &gt; 0.05）的 ψ 组成 95% 置信区间。</p>
+      <p>书里在 NHEFS 上得到的 G 估计约为 <b>3.4 公斤</b>，与 IP 加权、标准化一致。线性 SNMM 其实有闭式解，不需要网格搜索；有多个参数（比如效应修饰）时也有闭式解（14.6 节）。</p>
+      <p>G 估计的一个优点：它需要处理模型正确，但对效应模型的依赖比标准化对结局模型的依赖弱；把它和结局模型结合也能得到双重稳健的版本。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>网格搜索 ψ（模拟 NHEFS，真实效应 3.4）</h3></div>
+      <canvas id="gCv" height="230" aria-label="α₁ 随 ψ 变化的曲线"></canvas>
+      <div class="stats" id="gStats"></div>
+      <label class="ctrl"><span>拖动候选 ψ <output id="o_psi"></output></span><input type="range" id="s_psi" min="-2" max="8" step="0.25" value="0"></label>
+      <p class="small" id="gNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：结局回归与倾向评分</b>回到更常见的方法：倾向评分。一个反直觉的结论：预测得更准的倾向评分模型，不一定是更好的倾向评分模型。这和你论文的主题惊人地相似。</div>
+</div></section>
+</main>
+
+<script>
+const NH=(()=>{const r=rng(1566);const rows=[];for(let i=0;i<1566;i++){const age=25+r()*49;const wt=50+randn(r)*12+20;const cig=Math.max(1,20+randn(r)*10);
+  const za=(age-50)/12;const pa=expit(-1.5+0.5*za+0.9*za*za-0.03*(cig-20)+0.02*(wt-70));const a=r()<pa?1:0;
+  const y=2.6+3.4*a-1.4*za-1.3*za*za-0.06*(wt-70)+0.04*(cig-20)+randn(r)*5;rows.push({za,cig,wt,a,y})}return rows})();
+const Lf=d=>[d.za,d.za*d.za,(d.cig-20)/10,(d.wt-70)/10];
+// 对给定 ψ 拟合 A ~ H(ψ) + L，返回 α₁ 和它的 z 值
+function alphaAt(psi){const X=NH.map(d=>[1,(d.y-psi*d.a)/5,...Lf(d)]);const y=NH.map(d=>d.a);const b=logreg(X,y,10);
+  const p=X[0].length;const I=Array.from({length:p},()=>Array(p).fill(0));X.forEach(x=>{const m=expit(dot(x,b));const w=m*(1-m);for(let j=0;j<p;j++)for(let k=0;k<p;k++)I[j][k]+=w*x[j]*x[k]});
+  const M=I.map((row,i)=>[...row,i===1?1:0]);const inv1=_solve(M)[1];return{a:b[1],z:b[1]/Math.sqrt(inv1)}}
+const GRID=[];for(let p=-2;p<=8.001;p+=.25)GRID.push([p,alphaAt(p)]);
+let est=null;for(let i=1;i<GRID.length;i++){const[a,x]=GRID[i-1],[b,y]=GRID[i];if(x.a*y.a<=0){est=a+(b-a)*x.a/(x.a-y.a);break}}
+const ok=GRID.filter(g=>Math.abs(g[1].z)<1.96).map(g=>g[0]);
+function drawG(){const psi=+$('#s_psi').value;$('#o_psi').textContent=psi.toFixed(2);
+  const ys=GRID.map(g=>g[1].a);const lo=Math.min(...ys),hi=Math.max(...ys);
+  lineChart($('#gCv'),[{name:'α₁',color:'--accent',pts:GRID.map(g=>[g[0],g[1].a])},{name:'',color:'--w1',dots:true,pts:[[psi,alphaAt(psi).a]]}],{xlo:-2,xhi:8,ylo:lo-.05,yhi:hi+.05,xticks:[-2,0,2,4,6,8],yticks:[Math.round(lo*10)/10,0,Math.round(hi*10)/10],yd:1,hlines:[{y:0,label:'α₁ = 0'}],xlabel:'候选 ψ',rpad:30});
+  const cur=alphaAt(psi);$('#gNote').innerHTML=`ψ = ${psi.toFixed(2)} 时 α₁ = ${fmt(cur.a,3)}，z = ${fmt(cur.z,2)}。`+(Math.abs(cur.z)<1.96?'<span class="ok-t">不能拒绝 α₁ = 0</span>：这个 ψ 在 95% 置信区间里。':(cur.a>0?'α₁ &gt; 0：减掉的效应太少，H(ψ) 里还残留着处理的作用，处理组的 H 偏高。':'α₁ &lt; 0：减掉的效应太多了。'))}
+$('#gStats').innerHTML=`<div class="stat"><div class="k">G 估计 ψ̂（α₁ = 0 处）</div><div class="v">${est?est.toFixed(2):'—'} kg</div></div><div class="stat"><div class="k">95% 置信区间（网格）</div><div class="v">${ok.length?`[${ok[0].toFixed(2)}, ${ok[ok.length-1].toFixed(2)}]`:'—'}</div></div>`;
+$('#s_psi').oninput=drawG;drawG();onRedraw(drawG);
+
+quiz($('#quizBox'),[
+ {q:'G 估计找的是：',o:['让结局模型拟合最好的 ψ','让 H(ψ) 与处理无关（α₁ = 0）的 ψ','让权重均值等于 1 的 ψ'],a:1,w:'如果 ψ 正确，H(ψ) 就是 Y^{a=0}，在可交换性下与 A 无关。'},
+ {q:'G 估计需要秩保持假设吗？',o:['需要','不需要，只需要结构嵌套均值模型正确','只在样本小时需要'],a:1,w:'秩保持只是帮助理解的强假设。'},
+ {q:'结构嵌套模型直接建模的是：',o:['结局 E[Y|A,L]','处理 Pr[A|L]','处理的效应（blip）'],a:2,w:'它对 Y^{a=0} 如何依赖 L 不做假设。'},
+ {q:'你论文的一步偏离值 V¹ˢᴰ(π) 最接近 SNMM 里的哪个概念？',o:['以日志策略 μ 为参照的一个 blip','全程部署的价值','倾向评分'],a:0,w:'在第 t 步换成 π，之后回到 μ，正是一个 blip。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 19 章 时变处理 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="19">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 III 部分 · 第 19 章 · 必读</div>
+    <h1>时变处理</h1>
+    <p class="lead">到目前为止，处理只发生一次。现实中处理常常是一串决策：每个月决定吃不吃药，每一步决定出哪道题。这时“处理”变成了一个<b>处理史</b> Ā，因果问题变成了比较不同的<b>处理策略</b>。你论文里的出题策略 π 正是书里说的<b>动态策略</b>：根据学生不断更新的答题情况决定下一步。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">两类策略</div>
+    <p class="small"><b>静态策略</b>：事先定好整串处理，如“永远出难题”Ā = (1, 1, …)。</p>
+    <p class="small"><b>动态策略</b>：每一步按当时的情况决定，如“答对就出难题、答错就出简单题”。</p>
+    <div class="formula">Y<sup>g</sup>：如果按策略 g 处理，结局会是什么</div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s191" data-short="处理史"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">19.1–19.2</span><h2>处理史和处理策略</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>处理在时间 0, 1, …, K 上各发生一次，记为 <span class="m">Ā = (A₀, A₁, …, A<sub>K</sub>)</span>。每种处理史都对应一个潜在结果 <span class="m">Y<sup>ā</sup></span>。二分处理、K+1 个时间点，就有 2<sup>K+1</sup> 种静态处理史。书里最常比较的是“一直处理” <span class="m">ā = (1,1,…,1)</span> 和“一直不处理” <span class="m">ā = (0,0,…,0)</span>。</p>
+      <p>更一般地，<b>处理策略</b> g 是一套规则，告诉你在每个时间点怎么处理。书里的分类：</p>
+      <p><b>静态 vs 动态</b>：动态策略依赖随时间变化的变量 L<sub>k</sub>，比如“CD4 计数低于 200 就开始治疗”。<b>确定性 vs 随机</b>：随机策略在某些情况下按概率决定，比如“以 30% 的概率治疗”。</p>
+      <p>静态策略是动态策略的特例。还有一个重要概念：<b>最优动态策略</b>，即所有策略里让结局最好的那个。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>每一步选哪个技能 = A<sub>t</sub>；之前的答题历史 h<sub>t</sub> = L̄<sub>t</sub>；60 步之后的 NLG = Y。“closest-to-0.7 规则”是一个<b>确定性动态策略</b>；Safe-DFKT-AG 训练时的 softmax 策略是<b>随机动态策略</b>，部署时取 argmax 变成确定性的；Random 是一个<b>随机静态策略</b>（不依赖任何历史）；日志策略 μ 也是一个随机动态策略。论文比较的就是这几种策略下的 E[Y<sup>g</sup>]。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>两步出题：哪种策略最好</h3></div>
+      <p class="small muted">第 0 步出简单题（0）或难题（1）；看学生答对没（L₁）；第 1 步再出简单题或难题；最后看学习增益 Y。学生能力 U 高低各半，但看不到。数字由一个已知的模型精确算出（相当于无限多学生）。</p>
+      <div class="bars" id="gBars"></div>
+      <p class="small" id="gNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s191b" data-short="策略树"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">19.2+</span><h2>动手：选一种策略，看它在树上怎么走</h2></div>
+  <div class="panel">
+    <div class="row" style="margin-bottom:10px" id="stratBtns"></div>
+    <div class="tbl-wrap"><table id="treeTbl"></table></div>
+    <div class="verdict" style="margin-top:10px" id="treeVerdict"></div>
+  </div>
+</div></section>
+
+<section class="ch" id="s193" data-short="序贯可交换"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">19.3–19.5</span><h2>序贯随机试验和序贯可交换性</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>序贯随机试验</b>（19.3 节）：在每个时间点重新随机分配处理，分配概率可以依赖到当时为止的历史（包括之前的处理和 L）。医学里叫 SMART 设计。</p>
+      <p>这种试验满足<b>序贯可交换性</b>（19.4 节）：在每个时间点 k，给定过去的处理史和 L 的历史，当前处理和潜在结果独立：</p>
+      <div class="formula">Y<sup>g</sup> ⫫ A<sub>k</sub> | Ā<sub>k−1</sub> = g(…), L̄<sub>k</sub>，对每个 k</div>
+      <p>它是第 3 章条件可交换性在时间上的推广。观察数据里，它要求每个时间点上影响处理决定、又影响结局的变量都被测量到了。再加上每一步的正性和一致性，就能识别 E[Y<sup>g</sup>]。</p>
+      <p><b>部分可识别</b>（19.5 节）：有时序贯可交换性只对某些策略成立。比如数据里没记录 L₁，那么不依赖 L₁ 的静态策略可能还能识别，依赖 L₁ 的动态策略就不行了。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 模拟器是一个序贯随机试验</div>
+      <p>模拟器的随机日志策略 μ 在每一步按学生历史随机选技能，这正是一个序贯随机试验。所以在模拟器日志上，序贯可交换性（给定 h<sub>t</sub>）靠设计成立。60 步、每步 12 个技能，正性要求 μ 在每个历史下给每个技能正概率，随机日志策略能保证。</p>
+      <p>真实日志不是。每一步谁选题、依据什么选，都可能涉及没记录的信息（第 3 章）。还有一个时变特有的问题：上一步的选题会影响学生之后的答题（L），而这些答题又影响下一步选什么、也影响最终的学习结果。这就是第 20 章的“处理—混杂反馈”。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s196" data-short="时变混杂"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">19.6</span><h2>时变混杂和时变混杂因子</h2></div>
+  <div class="prose">
+    <p>时变混杂因子 L<sub>k</sub> 同时满足：影响之后的处理 A<sub>k</sub>，影响结局 Y，而且本身受之前处理 A<sub>k−1</sub> 的影响。比如 CD4 计数：低了就会开始治疗，它影响死亡，而之前的治疗又会改变它。</p>
+    <p>这类变量让传统方法陷入两难：<b>不调整</b> L<sub>k</sub>，A<sub>k</sub> 和 Y 之间有混杂；<b>调整</b> L<sub>k</sub>，又会挡住 A<sub>k−1</sub> 经过 L<sub>k</sub> 的那部分效应，还可能打开对撞路径。第 20 章专门讲这件事，第 21 章给出解决方案。</p>
+    <div id="tvDag"></div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：处理—混杂反馈</b>用同一个两步出题例子，亲眼看“调整 L₁”和“不调整 L₁”为什么都错。</div>
+</div></section>
+</main>
+
+<script>
+/* 两步出题的结构模型（三章共用同一组数字） */
+const PU=.5;
+const pL1=(a0,u)=>u?(a0?.6:.9):(a0?.2:.7);               // 第 0 步之后答对的概率
+const EY=(a0,a1,l1,u)=>.20+.10*u+(a0?(u?.10:-.05):0)+(l1?(a1?.18:.04):(a1?-.06:.08)); // 期望学习增益
+const STRATS=[
+ ['s00','永远简单（0,0）',()=>0,()=>0],['s11','永远困难（1,1）',()=>1,()=>1],['s01','先易后难（0,1）',()=>0,()=>1],['s10','先难后易（1,0）',()=>1,()=>0],
+ ['d0','先易；答对→难，答错→易',()=>0,l=>l],['d1','先难；答对→难，答错→易',()=>1,l=>l],['d2','先易；答对→易，答错→难',()=>0,l=>1-l]];
+function value(g0,g1){let v=0;for(const u of[0,1]){const pu=u?PU:1-PU;const a0=g0();for(const l1 of[0,1]){const pl=l1?pL1(a0,u):1-pL1(a0,u);v+=pu*pl*EY(a0,g1(l1),l1,u)}}return v}
+const VALS=STRATS.map(s=>[s[1],value(s[2],s[3])]);
+const best=VALS.reduce((b,x)=>x[1]>b[1]?x:b);
+barList($('#gBars'),VALS.map(([n,v])=>[n,v,n===best[0]?'--accent':'--muted']),{min:0,max:.5,fmt:v=>v.toFixed(3)});
+$('#gNote').innerHTML=`最好的是 <b>${best[0]}</b>（${best[1].toFixed(3)}）。它是动态策略：第 1 步要根据第 0 步的结果决定。任何静态策略都做不到这么好，因为“答对的学生适合难题、答错的学生适合简单题”这条信息只有在看到 L₁ 之后才能用。`;
+
+let cur='d0';
+$('#stratBtns').innerHTML=STRATS.map(s=>`<button class="btn ${s[0]===cur?'on':''}" data-s="${s[0]}">${s[1]}</button>`).join('');
+function drawTree(){const s=STRATS.find(x=>x[0]===cur);const a0=s[2]();let rows='';
+  for(const l1 of[1,0]){const a1=s[3](l1);let pl=0,ey=0;for(const u of[0,1]){const pu=u?PU:1-PU;const p=u?pL1(a0,u):pL1(a0,u);const q=l1?p:1-p;pl+=pu*q;ey+=pu*q*EY(a0,a1,l1,u)}
+    rows+=`<tr><td>${a0?'难题':'简单题'}</td><td>${l1?'答对':'答错'}</td><td class="num">${pl.toFixed(3)}</td><td>${a1?'难题':'简单题'}</td><td class="num">${(ey/pl).toFixed(3)}</td></tr>`}
+  $('#treeTbl').innerHTML='<thead><tr><th>第 0 步 A₀</th><th>L₁</th><th>走到这一支的概率</th><th>第 1 步 A₁</th><th>这一支的平均增益</th></tr></thead><tbody>'+rows+'</tbody>';
+  $('#treeVerdict').innerHTML=`E[Y<sup>g</sup>] = 两支按概率加权 = <b>${value(s[2],s[3]).toFixed(3)}</b>。注意“走到这一支的概率”由第 0 步的选择决定：先出难题，答错的人会多很多。`;
+  $$('#stratBtns .btn').forEach(b=>b.classList.toggle('on',b.dataset.s===cur))}
+$('#stratBtns').addEventListener('click',e=>{const b=e.target.closest('button[data-s]');if(!b)return;cur=b.dataset.s;drawTree()});drawTree();
+
+dag($('#tvDag'),{w:520,h:150,label:'时变混杂',nodes:[{id:'A0',x:50,y:115,t:'A₀',cls:'a'},{id:'L1',x:180,y:115,t:'L₁'},{id:'A1',x:320,y:115,t:'A₁',cls:'a'},{id:'Y',x:465,y:55,t:'Y',cls:'y'},{id:'U',x:250,y:28,t:'U',cls:'hid'}],
+  edges:[['A0','L1'],['L1','A1'],['A1','Y'],['U','L1'],['U','Y'],['A0','Y']]});
+
+quiz($('#quizBox'),[
+ {q:'“答对就出难题、答错就出简单题”是：',o:['静态策略','动态策略','随机静态策略'],a:1,w:'它依赖随时间更新的变量 L₁。'},
+ {q:'论文里的 Random 出题是：',o:['确定性动态策略','随机静态策略','最优策略'],a:1,w:'每一步按固定概率随机选，不看历史。'},
+ {q:'序贯可交换性要求：',o:['只在第 0 步可交换','每个时间点上，给定过去的处理和 L，当前处理与潜在结果独立','L 不随时间变化'],a:1,w:'这是条件可交换性在时间上的推广。'},
+ {q:'模拟器的随机日志策略相当于：',o:['观察性研究','序贯随机试验','单次随机试验'],a:1,w:'每一步按历史随机分配。'},
+ {q:'时变混杂因子 L_k 的特点是：',o:['只影响结局','受之前处理影响，又影响之后的处理和结局','不随时间变化'],a:1,w:'这让传统的“调整/不调整”两难。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

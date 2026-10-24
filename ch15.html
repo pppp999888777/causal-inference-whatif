@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 15 章 结局回归与倾向评分 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="15">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 15 章 · 必读</div>
+    <h1>结局回归与倾向评分</h1>
+    <p class="lead">两种最常见的“传统”调整方法。结局回归：把 L 放进 Y 的回归里。倾向评分：先把所有 L 压缩成一个数 <span class="m">π(L) = Pr[A=1|L]</span>，再按它分层、匹配或加权。这一章最值得你记住的是 15.5 节：<b>倾向评分模型的目的不是预测处理，预测得更准反而可能更糟</b>。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">倾向评分的关键性质</div>
+    <div class="formula">A ⫫ L | π(L) <span class="c">平衡分数</span></div>
+    <div class="formula">Y<sup>a</sup> ⫫ A | L ⇒ Y<sup>a</sup> ⫫ A | π(L)</div>
+    <p class="small muted">高维的 L 可以换成一维的 π(L)。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s151" data-short="结局回归"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">15.1</span><h2>结局回归：调整的是条件效应</h2></div>
+  <div class="prose">
+    <p>拟合 <span class="m">E[Y|A, L] = β₀ + β₁A + β₂L + β₃AL + …</span>。如果模型里没有 A 和 L 的交互项，β₁ 就是每一层里共同的效应；有交互项时，每层的效应是 <span class="m">β₁ + β₃L</span>，要得到整个人群的平均效应，还得做第 13 章的标准化。</p>
+    <p>书里的提醒：结局回归估计的是<b>条件</b>效应。处理不随时间变化、没有效应修饰时，它和边际效应一样；处理随时间变化时，这种“把 L 放进回归”的做法会出错（第 20 章）。</p>
+  </div>
+</div></section>
+
+<section class="ch" id="s152" data-short="倾向评分"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">15.2–15.4</span><h2>倾向评分：分层、标准化、匹配</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>倾向评分 <span class="m">π(L) = Pr[A=1|L]</span> 是每个人在其特征下接受处理的概率。Rosenbaum 和 Rubin 证明：给定倾向评分，L 和 A 独立（<b>平衡分数</b>）。所以如果给定 L 可交换，给定 π(L) 也可交换。</p>
+      <p>用法：<b>分层</b>，按倾向评分的五分位数或十分位数分组，组内比较，再加权平均（标准化）。<b>匹配</b>，给每个处理组成员找倾向评分相近的对照，估计 ATT（第 4 章）。<b>IP 加权</b>，权重就是 1/π(L) 或 1/(1−π(L))（第 12 章）。<b>回归调整</b>，把 π(L) 当协变量放进结局回归。</p>
+      <p>倾向评分在现实中总是估计出来的，通常用逻辑回归。检查方法不是看它“预测得多准”，而是看分层或加权后，<b>每个 L 在两组之间是否平衡</b>。</p>
+      <div class="paperlink"><div class="t">放到你的论文里</div><p>你的 <span class="m">μ̂(a|h)</span> 就是倾向评分，只不过动作是多值的（12 到 681 个技能），叫<b>广义倾向评分</b>。评价 μ̂ 好坏的标准应该是：加权后，日志里每个历史特征在“被选到动作 k”和“没被选到”之间是否平衡；而不是 μ̂ 预测日志动作的准确率。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>按倾向评分五分位分层，看平衡和效应</h3></div>
+      <p class="small muted">模拟 NHEFS（真实效应 3.4 公斤）。年龄的标准化差：两组年龄均值之差 / 标准差。</p>
+      <div class="tbl-wrap"><table id="psTbl"></table></div>
+      <div class="stats" id="psStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s155" data-short="预测≠调整"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">15.5</span><h2>倾向评分模型不是预测模型</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里区分三种模型。<b>结构模型</b>：描述潜在结果，是我们想要的因果量（比如边际结构模型）。<b>倾向评分模型</b>：为了调整混杂而估计的辅助模型。<b>预测模型</b>：为了预测而建的模型。</p>
+      <p>倾向评分模型的目标是让混杂被调整掉，不是把 A 预测准。所以：</p>
+      <p><b>1.</b> 加入只影响 A、不影响 Y 的变量（工具变量类变量），会让倾向评分模型的 AUC 变高，但权重更极端，估计方差变大；如果还有未测量混杂，偏倚会被<b>放大</b>（第 18 章的“偏倚放大”）。</p>
+      <p><b>2.</b> 加入只影响 Y、不影响 A 的变量，不改善 AUC，却能降低估计的方差。</p>
+      <p><b>3.</b> 倾向评分模型的 c 统计量（AUC）不是衡量它好坏的指标。</p>
+      <div class="paperlink"><div class="t">这就是你论文的主题</div><p>你的论文问：预测更准（AUC、校准更好）的 KT 模型，能不能带来更好的决策？结论是不能。书在倾向评分这里讲的是同一件事：<b>一个模型在预测任务上的指标，和它在下游因果或决策任务上的价值，是两回事</b>。答辩时可以引这一节：这不是 KT 特有的现象，因果推断里早就知道“用来做调整的模型不该按预测精度来选”。</p></div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>AUC 变高了，估计却变差了</h3></div>
+      <p class="small muted">2000 人，重复 150 次。L 是混杂因子；Z 只影响处理、不影响结局；U 是可选的未测量混杂。真实效应 = 1。</p>
+      <label class="ctrl"><span>Z 对处理的影响强度 <output id="o_z"></output></span><input type="range" id="s_z" min="0" max="3" step="0.25" value="2"></label>
+      <div class="row"><span class="small muted">未测量混杂 U：</span><button class="btn on" id="u_no">没有</button><button class="btn" id="u_yes">有</button></div>
+      <div class="tbl-wrap"><table id="aucTbl"></table></div>
+      <p class="small" id="aucNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>你的倾向模型 μ̂ 怎么验证？</summary><p>在模拟器里，日志策略已知，可以直接比较 μ̂ 和真实 μ（比如平均绝对误差、权重 π/μ̂ 与 π/μ 的相关）。在真实日志上，按本章的思路，应该报告加权后的平衡诊断（若干历史特征的标准化差），以及权重的分布和截断比例，而不是 μ̂ 的预测准确率。</p></details>
+  <div class="callout" style="margin-top:18px"><b>下一章：工具变量</b>前面所有方法都需要“没有未测量混杂”。工具变量是少数能绕开它的方法，代价是另一组同样强的假设。</div>
+</div></section>
+</main>
+
+<script>
+function auc(score,y){const idx=score.map((s,i)=>[s,y[i]]).sort((a,b)=>a[0]-b[0]);let rk=0,sum=0,n1=0;idx.forEach(([s,yy],i)=>{if(yy){sum+=i+1;n1++}});const n0=y.length-n1;return (sum-n1*(n1+1)/2)/(n1*n0)}
+
+/* ---------- 实验台 1：五分位分层 ---------- */
+(function(){
+  const r=rng(1566);const NH=[];for(let i=0;i<1566;i++){const age=25+r()*49;const wt=50+randn(r)*12+20;const cig=Math.max(1,20+randn(r)*10);
+    const za=(age-50)/12;const pa=expit(-1.5+0.5*za+0.9*za*za-0.03*(cig-20)+0.02*(wt-70));const a=r()<pa?1:0;
+    const y=2.6+3.4*a-1.4*za-1.3*za*za-0.06*(wt-70)+0.04*(cig-20)+randn(r)*5;NH.push({age,za,cig,wt,a,y})}
+  const F=d=>[1,d.za,d.za*d.za,(d.cig-20)/10,(d.wt-70)/10];const b=logreg(NH.map(F),NH.map(d=>d.a));NH.forEach(d=>d.ps=expit(dot(F(d),b)));
+  const cuts=[.2,.4,.6,.8].map(q=>quantile(NH.map(d=>d.ps),q));const qOf=p=>cuts.filter(c=>p>=c).length;
+  const smd=g=>{const t=g.filter(d=>d.a),c=g.filter(d=>!d.a);if(!t.length||!c.length)return NaN;const s=sd(g.map(d=>d.age));return (mean(t.map(d=>d.age))-mean(c.map(d=>d.age)))/s};
+  let rows='',std=0;
+  for(let q=0;q<5;q++){const g=NH.filter(d=>qOf(d.ps)===q);const t=g.filter(d=>d.a),c=g.filter(d=>!d.a);const eff=t.length&&c.length?mean(t.map(d=>d.y))-mean(c.map(d=>d.y)):NaN;std+=eff*g.length/NH.length;
+    rows+=`<tr><td>第 ${q+1} 组</td><td class="num">${t.length} / ${c.length}</td><td class="num">${fmt(smd(g),2)}</td><td class="num">${fmt(eff,2)}</td></tr>`}
+  $('#psTbl').innerHTML='<thead><tr><th>倾向评分五分位</th><th>处理 / 对照人数</th><th>年龄标准化差</th><th>组内效应（kg）</th></tr></thead><tbody>'+rows+'</tbody>';
+  const naive=mean(NH.filter(d=>d.a).map(d=>d.y))-mean(NH.filter(d=>!d.a).map(d=>d.y));
+  $('#psStats').innerHTML=`<div class="stat"><div class="k">分层前年龄标准化差</div><div class="v">${fmt(smd(NH),2)}</div></div><div class="stat"><div class="k">直接比较</div><div class="v">${naive.toFixed(2)} kg</div></div><div class="stat"><div class="k">五分位分层后加权平均</div><div class="v">${std.toFixed(2)} kg</div></div>`;
+})();
+
+/* ---------- 实验台 2：AUC 悖论 ---------- */
+let withU=false;
+function drawAUC(){
+  const zs=+$('#s_z').value;$('#o_z').textContent=zs.toFixed(2);const r=rng(155);const res={a:[],b:[]},aucs={a:[],b:[]};
+  for(let rep=0;rep<150;rep++){const rows=[];for(let i=0;i<2000;i++){const L=randn(r),Z=randn(r),U=withU?randn(r):0;const a=r()<expit(.8*L+zs*Z+.8*U)?1:0;const y=a+L+(withU?U:0)+randn(r);rows.push({L,Z,a,y})}
+    for(const k of['a','b']){const F=d=>k==='a'?[1,d.L]:[1,d.L,d.Z];const b=logreg(rows.map(F),rows.map(d=>d.a),10);const ps=rows.map(d=>clamp(expit(dot(F(d),b)),.005,.995));
+      let s1=0,w1=0,s0=0,w0=0;rows.forEach((d,i)=>{if(d.a){s1+=d.y/ps[i];w1+=1/ps[i]}else{s0+=d.y/(1-ps[i]);w0+=1/(1-ps[i])}});res[k].push(s1/w1-s0/w0);if(rep<20)aucs[k].push(auc(ps,rows.map(d=>d.a)))}}
+  const row=(nm,k)=>`<tr><td>${nm}</td><td class="num">${mean(aucs[k]).toFixed(3)}</td><td class="num">${fmt(mean(res[k])-1,3)}</td><td class="num">${sd(res[k]).toFixed(3)}</td></tr>`;
+  $('#aucTbl').innerHTML=`<thead><tr><th>倾向评分模型</th><th>AUC</th><th>偏差</th><th>标准差</th></tr></thead><tbody>${row('只放 L',  'a')}${row('放 L 和 Z','b')}</tbody>`;
+  $('#aucNote').innerHTML=(withU?'有未测量混杂时，两个模型都有偏，但加了 Z 的偏差更大：<b>偏倚放大</b>。Z 解释掉了 A 里“干净”的那部分变异，剩下的变异里 U 的比重更大。':'没有未测量混杂时，两个模型都无偏；加了 Z 的模型 AUC 更高，但标准差更大。')+' 把 Z 的强度拉到 0 对比一下。'}
+$('#s_z').onchange=drawAUC;$('#s_z').oninput=()=>$('#o_z').textContent=(+$('#s_z').value).toFixed(2);
+segmented(['u_no','u_yes'],id=>{withU=id==='u_yes';drawAUC()});drawAUC();
+
+quiz($('#quizBox'),[
+ {q:'倾向评分是“平衡分数”的意思是：',o:['给定 π(L)，L 在两组之间分布相同','π(L) 总是 0.5','两组人数相同'],a:0,w:'A ⫫ L | π(L)。'},
+ {q:'评价倾向评分模型好坏，应该看：',o:['AUC 越高越好','调整后 L 在两组之间是否平衡','模型参数越多越好'],a:1,w:'倾向评分模型的目的是调整混杂，不是预测处理。'},
+ {q:'把一个只影响处理、不影响结局的变量 Z 加进倾向评分模型：',o:['AUC 升高，估计方差也升高；有未测量混杂时还会放大偏倚','一定改善估计','没有影响'],a:0,w:'这是本章最反直觉的结论。'},
+ {q:'倾向评分匹配通常估计的是：',o:['ATE','ATT','条件效应'],a:1,w:'匹配后的人群 L 分布与处理组一致。'},
+ {q:'论文的核心发现和本章哪一节最相似？',o:['15.1 结局回归','15.5 倾向评分模型不是预测模型','15.4 匹配'],a:1,w:'模型的预测指标与下游因果或决策价值不是一回事。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

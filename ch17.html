@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 17 章 因果生存分析 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="17">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 17 章 · 选读</div>
+    <h1>因果生存分析</h1>
+    <p class="lead">结局是“多久之后发生”，比如死亡时间、或学生多少步才掌握。两个新麻烦：一是<b>删失</b>，有些人到研究结束还没发生事件；二是常用的<b>风险比（hazard ratio）</b>本身就带着选择偏倚。书里的建议：别报风险比，报不同时间点的生存曲线和风险差。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">从风险率到生存</div>
+    <div class="formula">h<sub>k</sub> = Pr[事件在第 k 期 | 到 k−1 期还没发生]</div>
+    <div class="formula">S(k) = Π<sub>m≤k</sub> (1 − h<sub>m</sub>) <span class="c">生存概率</span></div>
+    <div class="formula">风险 = 1 − S(k)</div>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s171" data-short="风险率与生存"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">17.1–17.3</span><h2>风险率、生存曲线和删失</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>书里的例子：NHEFS 里戒烟对此后约 10 年内死亡的影响。按月记录，每个月有一个<b>风险率</b>（hazard）：活到上个月的人里，这个月死亡的比例。把每月的“存活概率” (1 − h) 连乘，就是生存曲线。</p>
+      <p>离散时间下，风险率可以用<b>汇总逻辑回归</b>（pooled logistic regression）估计：把数据展开成“人-月”格式，每人每月一行，对“这个月是否死亡”做逻辑回归。</p>
+      <p><b>删失</b>（17.3 节）：研究在 1992 年结束，到那时还活着的人，我们只知道“死亡时间超过 X”。这叫行政删失。如果删失和结局无关（独立删失），Kaplan–Meier 等方法能正确估计生存曲线；如果有人因为病重提前退出，就是第 8 章的选择偏倚，要用删失的 IP 权重。</p>
+      <p>因果问题写成：<span class="m">Pr[T<sup>a=1</sup> &gt; k] − Pr[T<sup>a=0</sup> &gt; k]</span>，即每个时间点 k 上，两种处理下的生存概率之差。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>同一个风险比，不同时间点的风险差</h3></div>
+      <label class="ctrl"><span>对照组每期风险率 <output id="o_h0"></output></span><input type="range" id="s_h0" min="0.005" max="0.1" step="0.005" value="0.03"></label>
+      <label class="ctrl"><span>风险比（处理 / 对照）<output id="o_hr"></output></span><input type="range" id="s_hr" min="0.2" max="1.5" step="0.05" value="0.6"></label>
+      <canvas id="sCv" height="210" aria-label="两组的生存曲线"></canvas>
+      <div class="stats" id="sStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s174" data-short="风险比的陷阱"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">17.4–17.6</span><h2>三种 g 方法，以及风险比的陷阱</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>前几章的三种 g 方法都能用在生存数据上：<b>IP 加权</b>，用加权的汇总逻辑回归估计边际结构风险率模型，再连乘成生存曲线（17.4）；<b>参数 g 公式</b>，拟合以 A、L 为条件的风险率模型，对每个人预测两种处理下的生存曲线，再平均（17.5）；<b>G 估计</b>，用结构嵌套加速失效时间模型（17.6）。书里在 NHEFS 上用这些方法得到的生存曲线，两组差别都很小。</p>
+      <p><b>风险比的陷阱</b>（书中的细节框）：即使在随机试验里，第 k 期的风险比也是在“活到 k−1 期的人”里计算的。活下来本身受处理影响，也受个人体质影响，所以条件化“活下来”就是条件化一个对撞点（第 8 章）。随着时间推移，处理组里活下来的人体质越来越差（因为处理把体弱的人也保住了），对照组里活下来的越来越强壮，风险比会向 1 漂移，甚至反转，即使处理对每个人的作用始终不变。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>随机试验里，风险比也会漂移</h3></div>
+      <p class="small muted">一半人体弱（每期风险率高），一半人强壮。处理把<b>每个人</b>的风险率都乘以 0.5，个体层面的风险比始终是 0.5。</p>
+      <label class="ctrl"><span>体弱者的风险率 <output id="o_fr"></output></span><input type="range" id="s_fr" min="0.05" max="0.4" step="0.01" value="0.2"></label>
+      <canvas id="hrCv" height="200" aria-label="边际风险比随时间变化"></canvas>
+      <p class="small" id="hrNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="paper" data-short="你的 STM"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">PAPER</span><h2>你的 steps-to-mastery 是一个生存结局</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>论文定义：steps-to-mastery（STM）是学生第一次在目标技能上连续答对三题的步数。这是一个“到事件时间”：事件 = 掌握，时间 = 步数，60 步结束时还没掌握的学生被<b>行政删失</b>。</p>
+      <p>处理方法会改变答案：</p>
+      <p><b>只看掌握了的学生</b>：条件化了“60 步内掌握”，它同时受策略和学生能力影响，是第 8 章的选择偏倚。</p>
+      <p><b>没掌握的记为 60</b>：算出来的其实是<b>限制平均时间</b>（RMST，生存曲线下 0 到 60 步的面积），是一个合法的估计目标，但不是“平均需要多少步”。</p>
+      <p><b>报告生存曲线</b>：每个 k 步时“还没掌握的比例”。这是书里推荐的做法。</p>
+      <p>右边用玩具模拟器演示，事件定义为“掌握 12 个技能中的至少 9 个”。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 3</span><h3>同一批学生，三种算 STM 的方法</h3></div>
+      <canvas id="kmCv" height="220" aria-label="还没掌握的比例随步数变化"></canvas>
+      <div class="legend" id="kmLegend"></div>
+      <div class="tbl-wrap"><table id="stmTbl"></table></div>
+      <p class="small" id="stmNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <h3 style="margin:22px 0 10px">审稿人可能问的</h3>
+  <details><summary>60 步内没达到掌握的学生，STM 怎么算？</summary><p>需要在论文里明确写出来。如果记为 60，应该把指标称为“截至 60 步的限制平均掌握时间”；如果只在达到掌握的学生中计算，要报告每种方法的达到比例，并说明存在选择偏倚。最稳妥的是在附录里给出每种方法的“未掌握比例随步数变化”曲线。</p></details>
+  <div class="callout" style="margin-top:18px"><b>下一章：因果推断的变量选择</b>调整哪些变量、怎么用机器学习估计辅助模型、为什么要交叉拟合。直接对应你论文的 2 折交叉拟合。</div>
+</div></section>
+</main>
+
+<script>
+function drawS(){const h0=+$('#s_h0').value,hr=+$('#s_hr').value;$('#o_h0').textContent=h0.toFixed(3);$('#o_hr').textContent=hr.toFixed(2);
+  const K=60;const s1=[[0,1]],s0=[[0,1]];let a=1,b=1;for(let k=1;k<=K;k++){a*=1-Math.min(1,h0*hr);b*=1-h0;s1.push([k,a]);s0.push([k,b])}
+  lineChart($('#sCv'),[{name:'处理',color:'--w1',pts:s1},{name:'对照',color:'--w0',pts:s0,dy:14}],{xlo:0,xhi:60,ylo:0,yhi:1,xticks:[0,10,20,30,40,50,60],yticks:[0,.25,.5,.75,1],yd:2,xlabel:'时间（期）'});
+  const at=k=>s0[k][1]-s1[k][1];
+  $('#sStats').innerHTML=[10,30,60].map(k=>`<div class="stat"><div class="k">第 ${k} 期风险差（处理 − 对照）</div><div class="v">${fmt(at(k),3)}</div></div>`).join('')}
+['s_h0','s_hr'].forEach(id=>$('#'+id).oninput=drawS);drawS();onRedraw(drawS);
+
+function drawHR(){const hf=+$('#s_fr').value,hs=.02;$('#o_fr').textContent=hf.toFixed(2);
+  let f1=.5,s1=.5,f0=.5,s0=.5;const pts=[];
+  for(let k=1;k<=40;k++){const h1=(f1*hf*.5+s1*hs*.5)/(f1+s1),h0=(f0*hf+s0*hs)/(f0+s0);pts.push([k,h1/h0]);f1*=1-hf*.5;s1*=1-hs*.5;f0*=1-hf;s0*=1-hs}
+  lineChart($('#hrCv'),[{name:'边际风险比',color:'--accent',pts}],{xlo:1,xhi:40,ylo:.4,yhi:1.1,xticks:[1,10,20,30,40],yticks:[.5,.75,1],yd:2,hlines:[{y:.5,label:'每个人的真实风险比 0.5'}],xlabel:'时间（期）',rpad:80});
+  $('#hrNote').innerHTML=`第 1 期边际风险比 ${pts[0][1].toFixed(2)}，第 40 期变成 <b>${pts[39][1].toFixed(2)}</b>。处理对每个人的作用没变，变的是“活到这一期的人”是谁。`}
+$('#s_fr').oninput=drawHR;drawHR();onRedraw(drawHR);
+
+/* ---------- 实验台 3：玩具模拟器的 STM ---------- */
+const STU=[];for(let i=0;i<300;i++)STU.push(KT.makeStudent(i));
+const PL=[['rand','--w0'],['c07','--w1'],['greedy','--muted']];
+const R=PL.map(([p])=>STU.map(s=>KT.teach(s,p).tm));
+function drawKM(){
+  const series=PL.map(([p,c],j)=>{const pts=[];for(let k=0;k<=60;k++)pts.push([k,R[j].filter(t=>t===null||t>k).length/R[j].length]);return{name:KT.SHORT[p],color:c,pts,dy:j*13}});
+  lineChart($('#kmCv'),series,{xlo:0,xhi:60,ylo:0,yhi:1,xticks:[0,20,40,60],yticks:[0,.5,1],yd:1,xlabel:'步数',rpad:84});
+  $('#kmLegend').innerHTML=PL.map(([p,c])=>`<span><i style="background:var(${c})"></i>${KT.SHORT[p]}</span>`).join('')+'<span>纵轴：还没掌握的比例</span>';
+  $('#stmTbl').innerHTML='<thead><tr><th>策略</th><th>60 步内掌握</th><th>只看掌握者的平均</th><th>未掌握记为 60（RMST）</th></tr></thead><tbody>'+PL.map(([p],j)=>{const got=R[j].filter(t=>t!==null);return `<tr><td>${KT.SHORT[p]}</td><td class="num">${(got.length/3).toFixed(0)}%</td><td class="num">${got.length?mean(got).toFixed(1):'—'}</td><td class="num">${mean(R[j].map(t=>t===null?60:t)).toFixed(1)}</td></tr>`}).join('')+'</tbody>';
+  $('#stmNote').textContent='“只看掌握者”时，掌握比例很低的策略只剩下最容易掌握的那批学生，平均步数反而可能好看。RMST 和生存曲线把没掌握的学生也算进来。'}
+drawKM();onRedraw(drawKM);
+
+quiz($('#quizBox'),[
+ {q:'生存概率 S(k) 和风险率 h 的关系是：',o:['S(k) = 1 − h_k','S(k) = Π (1 − h_m)','S(k) = Σ h_m'],a:1,w:'每期存活概率连乘。'},
+ {q:'随机试验里风险比随时间漂移，原因是：',o:['随机化失败','每期的风险比都以“活到这期”为条件，条件化了对撞点','样本太小'],a:1,w:'活下来受处理和体质共同影响。'},
+ {q:'把 60 步内没掌握的学生记为 60，算出的平均值是：',o:['平均掌握时间','截至 60 步的限制平均时间（RMST）','中位掌握时间'],a:1,w:'它是生存曲线在 0 到 60 之间的面积。'},
+ {q:'只在“达到掌握的学生”中比较 STM，会有：',o:['选择偏倚','没有问题','测量偏倚'],a:0,w:'是否在 60 步内掌握同时受策略和学生能力影响。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>

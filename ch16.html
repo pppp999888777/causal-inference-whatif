@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>第 16 章 工具变量 · 因果推断学习台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-ch="16">
+<nav class="top" id="topnav" aria-label="本章导航"></nav>
+<script src="assets/common.js"></script>
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">第 II 部分 · 第 16 章 · 选读</div>
+    <h1>工具变量</h1>
+    <p class="lead">前面所有方法都需要测量所有混杂因子。工具变量（IV）是少数能在存在未测量混杂时识别效应的方法：找一个变量 Z，它影响处理 A，但只通过 A 影响结局，而且和结局没有共同原因。代价是这些条件同样无法检验，而且工具一弱，估计就极不稳定。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">常用的 IV 估计（Wald）</div>
+    <div class="formula">(E[Y|Z=1] − E[Y|Z=0]) / (E[A|Z=1] − E[A|Z=0])</div>
+    <p class="small muted">分子：Z 对 Y 的效应（ITT）；分母：Z 对 A 的效应（依从差）。</p>
+  </div>
+</div></header>
+
+<main>
+<section class="ch" id="s161" data-short="三个条件"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">16.1–16.2</span><h2>三个工具条件和常用估计</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>Z 是工具变量，需要满足：</p>
+      <p><b>(i) 相关性</b>：Z 和 A 相关。这是唯一能用数据检查的条件。</p>
+      <p><b>(ii) 排他性</b>：Z 只通过 A 影响 Y，没有别的路。</p>
+      <p><b>(iii) 无共同原因</b>：Z 和 Y 没有共同原因（比如 Z 是随机分配的）。</p>
+      <p>最干净的例子是有不依从的随机试验：Z = 随机分到哪组，A = 实际吃没吃药。书里在 NHEFS 上尝试用<b>香烟价格</b>（各州不同）做戒烟的工具，结果工具很弱，置信区间宽到没法用，而且价格是否满足排他性也很可疑。</p>
+      <p>Wald 估计量：Z 对 Y 的效应除以 Z 对 A 的效应。直觉：Z 每让 1% 的人多接受处理，Y 就变化多少。连续变量时等价于两阶段最小二乘。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>弱工具和违反排他性</h3></div>
+      <p class="small muted">5000 人，重复 200 次。U 是未测量混杂（同时影响 A 和 Y），真实效应 = 1。</p>
+      <label class="ctrl"><span>Z 对 A 的影响（工具强度）<output id="o_zs"></output></span><input type="range" id="s_zs" min="0.02" max="0.6" step="0.02" value="0.3"></label>
+      <label class="ctrl"><span>Z 对 Y 的直接影响（违反排他性）<output id="o_ex"></output></span><input type="range" id="s_ex" min="0" max="0.2" step="0.01" value="0"></label>
+      <div class="tbl-wrap"><table id="ivTbl"></table></div>
+      <canvas id="ivCv" height="170" aria-label="IV 估计的分布"></canvas>
+      <p class="small" id="ivNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s163" data-short="第四个条件"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">16.3–16.4</span><h2>第四个条件：同质性或单调性</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>三个工具条件只够给出效应的<b>上下界</b>。要得到一个点估计，还需要第四个条件，有两种选法：</p>
+      <p><b>同质性</b>（16.3 节）：处理的效应对所有人一样（或者至少不随 Z 修饰）。这时 Wald 估计的就是整个人群的平均效应。这个假设很强。</p>
+      <p><b>单调性</b>（16.4 节）：没有“反抗者”。按对 Z 的反应把人分成四类：<b>总是接受者</b>（不管分到哪组都吃药）、<b>从不接受者</b>、<b>依从者</b>（分到哪组就照做）、<b>反抗者</b>（分到治疗组反而不吃）。单调性假设没有反抗者。这时 Wald 估计的是<b>依从者</b>里的平均效应（LATE），不是整个人群的。</p>
+      <p>书里的批评：依从者是谁我们不知道，也没法从数据中找出来；而且依从者的定义依赖于具体的工具，换一个工具，“依从者”就是另一群人。</p>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">实验台 2</span><h3>不同类型的人效应不同时，IV 估的是谁</h3></div>
+      <label class="ctrl"><span>依从者比例 <output id="o_co"></output></span><input type="range" id="s_co" min="0.1" max="0.9" step="0.05" value="0.4"></label>
+      <label class="ctrl"><span>总是接受者比例 <output id="o_at"></output></span><input type="range" id="s_at" min="0" max="0.5" step="0.05" value="0.3"></label>
+      <p class="small muted">剩下的是从不接受者。效应：依从者 2.0，总是接受者 0.5，从不接受者 1.0。</p>
+      <div class="stats" id="lateStats"></div>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="s165" data-short="对比其他方法"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">16.5–16.6</span><h2>条件再看一遍，以及 IV 和其他方法的比较</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>IV 的风险在于除以一个小数。分母（Z 对 A 的效应）很小时，分子里任何一点点偏差（排他性稍有违反、Z 和 Y 有一点共同原因）都会被放大很多倍。所以一个弱工具加一个“几乎满足”的排他性，可能比直接忽略混杂偏得还厉害。实验台 1 可以看到这一点。</p>
+      <p>书里的总结：IV 把“没有未测量混杂”这个无法检验的假设，换成了“工具条件和同质性/单调性”这些同样无法检验的假设。它在一些特定场景下很有价值（有不依从的随机试验、真正的自然实验），但不是解决混杂的万能钥匙。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">放到你的论文里 · 真实日志里有没有工具变量</div>
+      <p>在模拟器里你不需要 IV，因为日志策略已知、没有未测量混杂。在真实日志上，如果担心老师和课堂造成的混杂（第 3、7 章），工具变量是一条路。候选：<b>平台做过的随机实验</b>（ASSISTments 有面向研究者的随机实验平台，某些作业的题目顺序或提示方式是随机分配的），或者<b>系统层面的随机轮换</b>（题库随机抽题）。这种随机分配就是 Z，学生实际练到的技能是 A。注意排他性：被随机分到某种题目顺序，可能不只通过“练了哪个技能”影响学习（比如影响动机）。</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="ch" id="quiz" data-short="自测"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>自测</h2></div>
+  <div class="quiz" id="quizBox"></div>
+  <div class="callout" style="margin-top:18px"><b>下一章：因果生存分析</b>结局是“多久之后发生”的时候怎么办，以及为什么风险比（hazard ratio）有陷阱。你的 steps-to-mastery 正是这类结局。</div>
+</div></section>
+</main>
+
+<script>
+function drawIV(){
+  const zs=+$('#s_zs').value,ex=+$('#s_ex').value;$('#o_zs').textContent=zs.toFixed(2);$('#o_ex').textContent=ex.toFixed(2);
+  const r=rng(161);const iv=[],nv=[];let fs=0;
+  for(let rep=0;rep<200;rep++){let y1=0,y0=0,a1=0,a0=0,n1=0,n0=0,sa=0,sy=0,na=0,ny=0;
+    for(let i=0;i<5000;i++){const z=r()<.5?1:0,U=r()<.5?1:0;const a=r()<clamp(.25+zs*z+.3*U,0,1)?1:0;const y=1*a+1.5*U+ex*z+randn(r);
+      if(z){y1+=y;a1+=a;n1++}else{y0+=y;a0+=a;n0++}if(a){sa+=y;na++}else{sy+=y;ny++}}
+    const den=a1/n1-a0/n0;fs+=den;iv.push((y1/n1-y0/n0)/den);nv.push(sa/na-sy/ny)}
+  const md=a=>quantile(a,.5),iqr=a=>quantile(a,.75)-quantile(a,.25);
+  $('#ivTbl').innerHTML=`<thead><tr><th>方法</th><th>中位数</th><th>四分位距</th></tr></thead><tbody><tr><td>直接比较（有混杂）</td><td class="num">${md(nv).toFixed(3)}</td><td class="num">${iqr(nv).toFixed(3)}</td></tr><tr><td>IV（Wald）</td><td class="num">${md(iv).toFixed(3)}</td><td class="num">${iqr(iv).toFixed(3)}</td></tr></tbody>`;
+  histogram($('#ivCv'),iv.map(v=>clamp(v,-2,4)),{lo:-2,hi:4,bins:60,ticks:[-2,0,1,2,4],td:0,line:1,lineLabel:'真值 1'});
+  $('#ivNote').innerHTML=`Z 对 A 的平均效应（分母）= ${(fs/200).toFixed(3)}。${ex>0?`排他性只违反了 ${ex.toFixed(2)}，IV 的偏差约为 ${ex.toFixed(2)} / ${(fs/200).toFixed(2)} ≈ <b>${(ex/(fs/200)).toFixed(2)}</b>：分母越小，放大越厉害。`:'工具越弱，IV 估计越散，超出 [−2, 4] 的值被压在两端。'}`}
+['s_zs','s_ex'].forEach(id=>{$('#'+id).onchange=drawIV;$('#'+id).oninput=()=>{$('#o_zs').textContent=(+$('#s_zs').value).toFixed(2);$('#o_ex').textContent=(+$('#s_ex').value).toFixed(2)}});drawIV();onRedraw(drawIV);
+
+function drawLATE(){let co=+$('#s_co').value,at=+$('#s_at').value;if(co+at>1){at=1-co;$('#s_at').value=at}const nt=1-co-at;
+  $('#o_co').textContent=co.toFixed(2);$('#o_at').textContent=at.toFixed(2);
+  const ate=co*2+at*.5+nt*1;const wald=(co*2)/co;
+  $('#lateStats').innerHTML=`<div class="stat"><div class="k">从不接受者比例</div><div class="v">${nt.toFixed(2)}</div></div><div class="stat"><div class="k">整个人群的平均效应 ATE</div><div class="v">${ate.toFixed(2)}</div></div><div class="stat"><div class="k">IV 估计（= 依从者的效应 LATE）</div><div class="v">${wald.toFixed(2)}</div></div>`}
+['s_co','s_at'].forEach(id=>$('#'+id).oninput=drawLATE);drawLATE();
+
+quiz($('#quizBox'),[
+ {q:'三个工具条件里，哪个可以用数据检查？',o:['Z 与 A 相关','排他性','Z 与 Y 无共同原因'],a:0,w:'另外两个都涉及看不到的路径。'},
+ {q:'在单调性假设下，Wald 估计量估计的是：',o:['整个人群的平均效应','依从者的平均效应（LATE）','总是接受者的效应'],a:1,w:'只有依从者的处理会随 Z 改变。'},
+ {q:'工具很弱时，排他性的一点小违反会：',o:['被忽略','被放大为很大的偏差','让估计更精确'],a:1,w:'偏差约等于 Z 对 Y 的直接效应除以 Z 对 A 的效应。'},
+ {q:'在你的模拟器里需要工具变量吗？',o:['需要','不需要，日志策略已知，没有未测量混杂','只在 Junyi 上需要'],a:1,w:'IV 是为未测量混杂准备的。'},
+]);
+</script>
+<footer id="chfoot"></footer>
+<script>initChapter()</script>
+</body>
+</html>
