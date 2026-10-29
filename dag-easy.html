@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>从零看懂 DAG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+body{font-size:16px;line-height:1.9}
+.prose p{max-width:62ch}
+.big{font-size:1.1rem}
+.story{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px}
+.story .who{font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.say{border-left:4px solid var(--accent);padding:8px 14px;background:var(--sunk);border-radius:0 8px 8px 0}
+.say b{color:var(--accent)}
+.word{display:inline-block;background:var(--sunk);border-radius:6px;padding:0 6px;font-weight:600}
+.easyDag .dag{max-width:620px}
+#d_mine .dag,#d_ds .dag{max-width:860px}
+.easyDag .dag .nd text{font-size:15px}
+.stepbox{display:grid;gap:12px}
+.check{display:grid;gap:6px}
+.check label{display:flex;gap:8px;align-items:flex-start;font-size:15px}
+.check input{margin-top:6px;accent-color:var(--accent)}
+.rows td,.rows th{font-size:14px}
+@media (max-width:700px){.easyDag{overflow-x:auto}.easyDag .dag{min-width:520px}}
+</style>
+</head>
+<body>
+<nav class="top" aria-label="本页导航"><div class="wrap">
+  <a href="index.html"><b>←</b>目录</a>
+  <a href="#s1"><b>1</b>一个奇怪的发现</a>
+  <a href="#s2"><b>2</b>DAG 是什么</a>
+  <a href="#s3"><b>3</b>三种形状</a>
+  <a href="#s4"><b>4</b>后门</a>
+  <a href="#s5"><b>5</b>我的数据</a>
+  <a href="#s6"><b>6</b>画我的图</a>
+  <a href="#s7"><b>7</b>四个数据集</a>
+  <a href="#s8"><b>8</b>模拟器</a>
+  <a href="#s9"><b>9</b>明天怎么讲</a>
+  <a href="#s10"><b>10</b>老师会问</a>
+  <a href="dag.html"><b>+</b>进阶版</a>
+</div></nav>
+
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">从零开始 · 不需要任何基础</div>
+    <h1>从零看懂 DAG</h1>
+    <p class="lead big">这一页只用生活里的例子。读完你会知道：DAG 是什么、为什么要画它、怎么把我的四个数据集画成 DAG、明天上台说什么。一共 10 小节，每节都很短，按顺序往下看就行。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">先记住一句话</div>
+    <p class="big"><b>DAG 就是一张“谁影响谁”的箭头图。</b></p>
+    <p>画它的目的是找出：两件事看起来有关系，到底是<b>真的</b>一个影响另一个，还是被<b>别的东西</b>同时影响了。</p>
+  </div>
+</div></header>
+
+<main>
+<!-- ============ 1 ============ -->
+<section class="ch" id="s1"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1</span><h2>一个奇怪的发现：冰淇淋会让人溺水吗？</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>有人统计了一整年的数据，发现：<b>冰淇淋卖得多的日子，游泳溺水的人也多。</b></p>
+      <p>那是不是吃冰淇淋会让人溺水？当然不是。</p>
+      <p>真正的原因是<b>天气热</b>。天热的时候，买冰淇淋的人多；天热的时候，去游泳的人也多，溺水的事就多。冰淇淋和溺水之间其实没有关系，它们只是“同一个原因”造成的两个结果。</p>
+      <p>怎么证明？<b>只拿天气差不多的日子来比。</b>在同样热的日子里，冰淇淋卖得多一点还是少一点，溺水的人数就差不多了。右边可以自己点着试。</p>
+      <div class="say"><b>这一节学到的：</b>两件事“一起变多”，不代表一个让另一个变多。可能有一个藏在后面的共同原因。</div>
+    </div>
+    <div class="panel stack">
+      <div class="lab-title"><span class="lab-tag">动手试</span><h3>365 天的数据（编出来的）</h3></div>
+      <div class="row"><span class="small muted">看哪些日子：</span><button class="btn on" id="ic_all">全年</button><button class="btn" id="ic_hot">只看热天</button><button class="btn" id="ic_cold">只看冷天</button></div>
+      <div class="bars" id="icBars"></div>
+      <p class="small" id="icNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 2 ============ -->
+<section class="ch" id="s2"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">2</span><h2>DAG 是什么：就是画箭头</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>把上面的故事画成图：</p>
+      <p>· 每一件事画成一个<b>圆角框</b>，叫<span class="word">节点</span>。</p>
+      <p>· 如果 A 会影响 B，就画一个从 A 指向 B 的<b>箭头</b>。“天热 → 冰淇淋卖得多”的意思是：天热会让冰淇淋卖得多。</p>
+      <p>· 冰淇淋和溺水之间<b>没有箭头</b>，意思是：我们认为它们互相没有影响。</p>
+      <p>这张图就叫 DAG。三个字母的意思是“有方向、不绕圈的图”：</p>
+      <p>· <b>有方向</b>：箭头有头有尾，原因在尾巴，结果在箭头那边。</p>
+      <p>· <b>不绕圈</b>：顺着箭头走，永远走不回出发点。因为一件事不能是它自己的原因（今天的事不能影响昨天）。</p>
+      <div class="say"><b>画 DAG 最重要的规矩：</b>如果两件事有<b>共同原因</b>，这个共同原因一定要画出来，哪怕你没办法测量它。没测量的东西画成<b>虚线框</b>。</div>
+    </div>
+    <div class="stack">
+      <div class="easyDag" id="d_ice"></div>
+      <p class="small muted">实线框：我们有数据。虚线框：没有数据（这里天气其实能查到，所以画实线）。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 3 ============ -->
+<section class="ch" id="s3"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">3</span><h2>三种形状：认识它们，就会看所有的 DAG</h2></div>
+  <p class="big" style="margin-bottom:16px">再大的图，都是由三种小形状拼起来的。每种形状都有一个问题：<b>如果我“只看某一类情况”（大人叫<span class="word">条件化</span>或<span class="word">调整</span>），两头的关系会怎样？</b></p>
+
+  <div class="story" style="margin-bottom:14px">
+    <div class="who">形状一 · 传话（链）</div>
+    <div class="two">
+      <div class="easyDag" id="d_chain"></div>
+      <div class="prose">
+        <p><b>闹钟响了 → 起床了 → 准时到校。</b>闹钟通过“起床”影响到校，像传话一样一个传一个。</p>
+        <p>如果你已经知道小明<b>起床了</b>，那闹钟响没响，对“他会不会准时到校”就没有额外的帮助了。</p>
+        <p class="say"><b>规则：</b>只看中间那一格相同的情况，两头的关系就<b>断了</b>。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="story" style="margin-bottom:14px">
+    <div class="who">形状二 · 同一个原因（叉）</div>
+    <div class="two">
+      <div class="easyDag" id="d_fork"></div>
+      <div class="prose">
+        <p><b>天热 → 冰淇淋卖得多；天热 → 溺水多。</b>这就是第 1 节的故事。冰淇淋和溺水看起来有关，其实是天热“同时”造成的。</p>
+        <p>只看天气一样的日子，两者的关系就<b>消失</b>了。</p>
+        <p class="say"><b>规则：</b>只看共同原因相同的情况，两头的关系就<b>断了</b>。这就是“排除干扰”最常用的办法。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="story">
+    <div class="who">形状三 · 两个原因一个结果（对撞）</div>
+    <div class="two">
+      <div class="stack">
+        <div class="easyDag" id="d_coll"></div>
+        <div class="row"><span class="small muted">看哪些同学：</span><button class="btn on" id="co_all">全年级</button><button class="btn" id="co_sel">只看篮球队</button></div>
+        <canvas id="coCv" height="220" aria-label="身高和跑步速度的散点图"></canvas>
+        <p class="small" id="coNote"></p>
+      </div>
+      <div class="prose">
+        <p><b>个子高 → 进篮球队 ← 跑得快。</b>个子高能进篮球队，跑得快也能进篮球队。在全年级里，个子高不高和跑得快不快没什么关系。</p>
+        <p>可是<b>只看篮球队的队员</b>，奇怪的事发生了：个子矮的队员，往往跑得特别快（不然他怎么进的队？），于是“个子”和“速度”看起来变成了反着的关系。</p>
+        <p>这个关系是“只看篮球队”这个动作<b>凭空造出来的</b>。</p>
+        <p class="say"><b>规则：</b>这种形状本来两头没关系；一旦只看中间那一格相同的情况，两头反而<b>连上了</b>。它和前两种正好相反，最容易让人上当。</p>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 4 ============ -->
+<section class="ch" id="s4"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">4</span><h2>正门和后门：我们到底想知道什么</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>假设我们想知道：<b>“吃早饭”会不会让考试成绩变好？</b></p>
+      <p>数据显示，吃早饭的同学成绩更好。可是，家里管得严的同学，更容易每天吃早饭，也更容易好好学习。</p>
+      <p>从“吃早饭”到“成绩”，有两条路：</p>
+      <p>· <b>正门</b>：吃早饭 → 成绩。这是我们想知道的那个影响。</p>
+      <p>· <b>后门</b>：吃早饭 ← 家里管得严 → 成绩。这条路偷偷把两者连起来，会让我们以为早饭的作用比实际大。</p>
+      <p>要得到正确答案，就要<b>把后门关上</b>：只拿“家里管得一样严”的同学来比。这就是第 3 节“叉”的规则。</p>
+      <div class="say"><b>大人的说法：</b>后门带来的干扰叫<span class="word">混杂</span>；那个共同原因（家里管得严）叫<span class="word">混杂因素</span>；“只拿一样的来比”叫<span class="word">调整</span>或<span class="word">控制</span>。</div>
+      <p><b>两个要小心的地方：</b></p>
+      <p>① 共同原因如果<b>没有数据</b>（比如“家里管得严”没人记录），后门就关不上。</p>
+      <p>② 不能乱调整。像第 3 节的“篮球队”那样的形状，调整了反而会造出假关系。</p>
+    </div>
+    <div class="stack">
+      <div class="easyDag" id="d_door"></div>
+      <div class="row"><button class="btn" id="door_btn">只比“家里管得一样严”的同学：关</button></div>
+      <p class="small" id="doorNote"></p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 5 ============ -->
+<section class="ch" id="s5"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">5</span><h2>我的数据长什么样</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>想象一个手机上的<b>做题软件</b>。学生每做一道题，软件就记一行：<b>谁</b>做的、这题考的是<b>哪一类知识</b>（比如“分数加法”，叫<span class="word">技能</span>）、<b>对了还是错了</b>、这是他做的<b>第几题</b>。</p>
+      <p>我的论文用了 4 个这样的软件留下的数据：</p>
+      <p>· <b>ASSISTments</b>：美国的数学练习系统，3841 个学生。</p>
+      <p>· <b>EdNet</b>：韩国的英语考试练习软件，5000 个学生。</p>
+      <p>· <b>Algebra 2005</b>：美国的代数辅导软件，574 个学生。</p>
+      <p>· <b>Junyi</b>：台湾的数学学习网站，5000 个学生，还记录了“先学会哪一类才能学哪一类”。</p>
+      <p>不管原来记了多少东西，我的论文都只用了四列：<b>学生、技能、对错、顺序</b>。</p>
+      <div class="say"><b>我的问题用一句话说：</b>软件<b>给学生出哪一类题</b>，会不会让他<b>之后学得更好</b>？</div>
+    </div>
+    <div class="stack">
+      <h3 class="small">数据大概是这样（示意）</h3>
+      <div class="tbl-wrap panel"><table class="rows">
+        <thead><tr><th>学生</th><th>第几题</th><th>技能（哪一类题）</th><th>对错</th></tr></thead>
+        <tbody>
+          <tr><td>小明</td><td class="num">1</td><td>分数加法</td><td class="num">✗ 0</td></tr>
+          <tr><td>小明</td><td class="num">2</td><td>分数加法</td><td class="num">✓ 1</td></tr>
+          <tr><td>小明</td><td class="num">3</td><td>分数加法</td><td class="num">✓ 1</td></tr>
+          <tr><td>小明</td><td class="num">4</td><td>小数乘法</td><td class="num">✗ 0</td></tr>
+          <tr><td>小红</td><td class="num">1</td><td>小数乘法</td><td class="num">✓ 1</td></tr>
+          <tr><td colspan="4" class="muted small">…… 一共几十万行</td></tr>
+        </tbody>
+      </table></div>
+      <p class="small muted">真实数据里学生是编号，不是名字；技能也是编号。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 6 ============ -->
+<section class="ch" id="s6"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">6</span><h2>一步一步画出我的 DAG</h2></div>
+  <p class="big" style="margin-bottom:12px">点“下一步”，图会一块一块长出来。每一步上面是解释，下面绿框是上台时可以说的话。这也是明天上台时你可以照着点的顺序。</p>
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn" id="st_prev">← 上一步</button><button class="btn on" id="st_next">下一步 →</button><span class="step-n" id="st_n"></span>
+  </div>
+  <div class="stepbox">
+    <div class="info"><div class="t" id="st_title"></div><div id="st_text"></div></div>
+    <div class="easyDag" id="d_mine"></div>
+    <div class="say" id="st_say"></div>
+  </div>
+</div></section>
+
+<!-- ============ 7 ============ -->
+<section class="ch" id="s7"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">7</span><h2>四个数据集，哪里不一样</h2></div>
+  <p class="big" style="margin-bottom:12px">四个数据集的“主干”都和第 6 节一样。区别在于每个软件还多记了（或者没记）一些东西。点按钮切换。</p>
+  <div class="row" style="margin-bottom:12px" id="dsBtns"></div>
+  <div class="stack">
+    <div class="easyDag" id="d_ds"></div>
+    <div class="prose" id="dsText"></div>
+  </div>
+</div></section>
+
+<!-- ============ 8 ============ -->
+<section class="ch" id="s8"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">8</span><h2>为什么还要一个“模拟器”</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>第 6 节最后发现：真实数据里，“老师”这条后门关不上，因为没有老师的数据（或者有但没用）。那怎么办？</p>
+      <p>我的论文做了一个<b>模拟器</b>，可以把它想成<b>电子游戏里的假学生</b>：</p>
+      <p>· 每个假学生有一个“聪明程度”，每一类题有“会”和“不会”两种状态，都是程序按规则随机定的。</p>
+      <p>· 会的题大多能做对，不会的题偶尔能蒙对；每练一次，有一定机会从“不会”变成“会”。</p>
+      <p>· 这些规则里的数字，是用真实数据“学”出来的，所以假学生的表现和真学生差不多。</p>
+      <p>模拟器有两个好处：</p>
+      <p>① <b>规则是我们自己写的</b>，所以 DAG 一定是对的，没有藏起来的老师、课堂。</p>
+      <p>② <b>可以“时光倒流”</b>：同一个假学生，可以先用方法 A 教一遍，再倒回去用方法 B 再教一遍，直接看哪个方法让他学得更好。真实世界里一个学生只能被教一次，做不到这件事。</p>
+      <div class="say"><b>一句话：</b>真实数据用来让模拟器“像真的”，模拟器用来知道“真正的答案”。</div>
+    </div>
+    <div class="stack">
+      <div class="easyDag" id="d_sim"></div>
+      <p class="small muted">模拟器里没有老师、没有提示、也没有人中途不做。只剩“聪明程度 → 以前对错 → 出题”这一条后门，而“以前对错”是有数据的，可以关上。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 9 ============ -->
+<section class="ch" id="s9"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">9</span><h2>明天怎么讲：讲稿（大约 3 分钟）</h2></div>
+  <div class="two">
+    <div class="stack">
+      <div class="say"><b>第 1 句（开场）</b>老师好，我用 DAG 来展示我论文用的数据。我的问题是：做题软件给学生出哪一类题，会不会影响学生之后的学习。</div>
+      <div class="say"><b>第 2 句（数据）</b>我用了四个公开数据集：ASSISTments、EdNet、Algebra 2005 和 Junyi。每条记录是“哪个学生、做了哪个技能的题、对还是错、第几题”。</div>
+      <div class="say"><b>第 3 句（第 6 节第 1–2 步）</b>图里，“出哪类题”是我关心的原因，“之后做对没”是结果。中间的机制是学生“心里学会没有”，这个看不到，所以画成虚线。</div>
+      <div class="say"><b>第 4 句（第 3–4 步）</b>学生的基础也看不到。基础好的学生以前做对得多，软件会根据以前的对错出题；基础好的学生之后也更容易做对。所以出现了一条后门：出题 ← 以前对错 ← 基础 → 之后做对。</div>
+      <div class="say"><b>第 5 句（第 5 步）</b>老师和课堂也同时影响出什么题和学得怎么样，这是第二条后门。</div>
+      <div class="say"><b>第 6 句（第 6–7 步）</b>“以前对错”有数据，可以调整，第一条后门能关上；“老师”在多数数据集里没有记录，第二条后门关不上。</div>
+      <div class="say"><b>第 7 句（第 8 节）</b>所以我的论文另外做了一个模拟器。它的规则是我们自己写的，没有老师这条后门，而且同一个模拟学生可以用不同的出题方法各教一遍，所以能得到真正的答案。</div>
+      <div class="say"><b>第 8 句（第 7 节，如果有时间）</b>四个数据集也有区别：ASSISTments 有老师和提示的记录，而且做对 3 题就结束；Junyi 有知识点之间的先后关系；EdNet 只保留了做题 100 次以上的学生。</div>
+    </div>
+    <div class="stack">
+      <div class="paperlink"><div class="t">上台前自己检查一遍</div>
+        <div class="check" id="checkList"></div>
+      </div>
+      <p class="small muted">勾选只保存在你自己的浏览器里。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 10 ============ -->
+<section class="ch" id="s10"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">10</span><h2>老师可能问的问题，以及怎么回答</h2></div>
+  <details><summary>“学会没有”看不到，你为什么要画？</summary><p><b>答：</b>因为它是“以前对错”和“之后做对”的共同原因。DAG 的规矩是：共同原因必须画出来，不管有没有数据。看不到的画成虚线框。</p></details>
+  <details><summary>为什么“以前对错”要调整？</summary><p><b>答：</b>因为软件是根据以前的对错来出题的，而以前的对错又反映了学生的基础。它在后门上，把它调整掉（只比以前对错差不多的学生），后门就关上了。</p></details>
+  <details><summary>“这道题对没对”能不能也调整？</summary><p><b>答：</b>不能。这道题对没对，是“出了什么题”和“学生会不会”共同造成的结果，就像第 3 节的“篮球队”。调整它会造出假的关系。</p></details>
+  <details><summary>你怎么知道图画对了？</summary><p><b>答：</b>真实数据的图是根据常识和教育学知识画的，是一种假设，没办法用数据完全证明。这也是我用模拟器的原因：模拟器的规则是我们自己写的，它的图一定是对的。</p></details>
+  <details><summary>四个数据集的图有什么不同？</summary><p><b>答：</b>主干一样。ASSISTments 多了老师/班级和提示；Algebra 多了课程单元和提示；Junyi 多了知识点的先后关系；EdNet 只有题目和对错，而且只保留了做题多的学生。</p></details>
+  <details><summary>ASSISTments 有老师的数据，你为什么没用？</summary><p><b>答（诚实回答）：</b>论文只用了学生、技能、对错、顺序四列。老师和班级的编号其实可以用来关上“老师”这条后门，这是一个可以改进的地方。</p></details>
+  <details><summary>你的方法里调整了哪些变量？</summary><p><b>答（诚实回答）：</b>论文估计“软件怎么选题”的模型，只用了“上一题是哪个技能”，没有用以前每题的对错。按这张图，“以前对错”那条后门没有完全关上。这可能是离线估计偏乐观的一个原因，可以作为后续改进。<span class="muted">（这一条老师不问可以不说。）</span></p></details>
+</div></section>
+
+<section class="ch" id="words" data-short="小字典"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">≡</span><h2>小字典：大人的词是什么意思</h2></div>
+  <div class="tbl-wrap panel"><table>
+    <thead><tr><th>听到这个词</th><th>它的意思</th><th>在我的图里</th></tr></thead>
+    <tbody>
+      <tr><td>DAG（有向无环图）</td><td>“谁影响谁”的箭头图，箭头不能绕圈</td><td>整张图</td></tr>
+      <tr><td>节点</td><td>图里的一个框，代表一件事</td><td>出哪类题、之后做对没……</td></tr>
+      <tr><td>处理 / 干预</td><td>我们想知道它的作用的那件事</td><td>出哪类题</td></tr>
+      <tr><td>结局 / 结果</td><td>我们关心的结果</td><td>之后做对没（学得好不好）</td></tr>
+      <tr><td>潜变量</td><td>存在、但看不到、没有数据的东西</td><td>学会没有、基础好不好</td></tr>
+      <tr><td>混杂 / 混杂因素</td><td>同时影响原因和结果的“第三者”，会造成假关系</td><td>基础、老师</td></tr>
+      <tr><td>后门路径</td><td>绕过“正门”、偷偷把原因和结果连起来的路</td><td>出题 ← 以前对错 ← 基础 → 之后做对</td></tr>
+      <tr><td>调整 / 控制 / 条件化</td><td>只拿某方面一样的情况来比</td><td>只比以前对错差不多的学生</td></tr>
+      <tr><td>对撞点</td><td>两个箭头撞在一起的那个框；调整它会造出假关系</td><td>这道题对没对</td></tr>
+      <tr><td>选择偏倚</td><td>只看一部分人（比如没放弃的人）造成的假关系</td><td>只看坚持做完的学生</td></tr>
+      <tr><td>模拟器</td><td>按我们写的规则生成“假学生”的程序</td><td>论文用来算真正答案的工具</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout" style="margin-top:16px"><b>想看更细的版本</b>这一页看懂以后，可以去 <a href="dag.html">进阶版</a>：那里有每个数据集的完整 DAG、所有路径的列表，以及论文方法和 DAG 的对照。</div>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>第 1、3、4 节的例子是为了讲解编的数据。第 5–8 节依据论文代码和四个数据集的原始文件；真实数据里“学会没有”“基础”“老师”这些框和箭头，是根据常识画出的假设。</p></div></footer>
+
+<script src="assets/common.js"></script>
+<script>
+const box=(id,spec)=>dag($('#'+id),spec);
+
+/* ---------- 1 冰淇淋 ---------- */
+const DAYS=(()=>{const r=rng(365);const d=[];for(let i=0;i<365;i++){const hot=Math.sin(i/365*2*Math.PI-1.6)>0;const ice=(hot?120:40)+randn(r)*20;const drown=Math.max(0,Math.round((hot?3:0.6)+randn(r)*1.1));d.push({hot,ice,drown})}return d})();
+let icMode='all';
+function drawIce(){const g=DAYS.filter(d=>icMode==='all'||(icMode==='hot'?d.hot:!d.hot));const med=quantile(g.map(d=>d.ice),.5);
+  const hi=g.filter(d=>d.ice>=med),lo=g.filter(d=>d.ice<med);const a=mean(hi.map(d=>d.drown)),b=mean(lo.map(d=>d.drown));
+  barList($('#icBars'),[['冰淇淋卖得多的日子',a,'--w1'],['冰淇淋卖得少的日子',b,'--w0']],{min:0,max:3.5,fmt:v=>v.toFixed(1)+' 起'});
+  $('#icNote').innerHTML=(icMode==='all'?`全年看：冰淇淋卖得多的日子，平均每天溺水 <b>${a.toFixed(1)}</b> 起；卖得少的日子只有 <b>${b.toFixed(1)}</b> 起。看起来差很多！`:
+    `只看${icMode==='hot'?'热天':'冷天'}：两种日子差不多（${a.toFixed(1)} 和 ${b.toFixed(1)}）。天气一样的时候，冰淇淋和溺水就没关系了。`)}
+segmented(['ic_all','ic_hot','ic_cold'],id=>{icMode=id.slice(3);drawIce()});drawIce();
+
+/* ---------- 2 第一张图 ---------- */
+box('d_ice',{w:440,h:150,label:'冰淇淋的例子',nodes:[{id:'T',x:220,y:30,t:'天热'},{id:'I',x:90,y:120,t:'冰淇淋卖得多'},{id:'D',x:350,y:120,t:'溺水多'}],edges:[['T','I'],['T','D']]});
+
+/* ---------- 3 三种形状 ---------- */
+box('d_chain',{w:440,h:80,label:'传话',nodes:[{id:'a',x:60,y:40,t:'闹钟响'},{id:'b',x:210,y:40,t:'起床'},{id:'c',x:370,y:40,t:'准时到校'}],edges:[['a','b'],['b','c']]});
+box('d_fork',{w:440,h:150,label:'同一个原因',nodes:[{id:'T',x:220,y:30,t:'天热'},{id:'I',x:90,y:120,t:'冰淇淋多'},{id:'D',x:350,y:120,t:'溺水多'}],edges:[['T','I'],['T','D']]});
+let coSel=false;
+const KIDS=(()=>{const r=rng(77);const k=[];for(let i=0;i<500;i++){const h=randn(r),s=randn(r);k.push({h,s,team:h+s>1.6})}return k})();
+function drawColl(){box('d_coll',{w:440,h:150,label:'两个原因一个结果',nodes:[{id:'h',x:80,y:30,t:'个子高'},{id:'s',x:360,y:30,t:'跑得快'},{id:'t',x:220,y:120,t:'进篮球队',cls:coSel?'cond':''}],edges:[['h','t'],['s','t']]});
+  const g=KIDS.filter(k=>!coSel||k.team);const mh=mean(g.map(k=>k.h)),ms=mean(g.map(k=>k.s));
+  const r=g.reduce((a,k)=>a+(k.h-mh)*(k.s-ms),0)/Math.sqrt(g.reduce((a,k)=>a+(k.h-mh)**2,0)*g.reduce((a,k)=>a+(k.s-ms)**2,0));
+  scatter($('#coCv'),KIDS.map(k=>({x:k.h,y:k.s,color:coSel?(k.team?'--w1':'--line'):'--accent'})),{xlo:-3,xhi:3.5,ylo:-3,yhi:3.5,xticks:[],yticks:[],xlabel:'→ 个子越高',r:3,alpha:.8});
+  $('#coNote').innerHTML=coSel?`只看篮球队（红点，${g.length} 人）：个子越矮的队员，跑得越快，关系变成了反的（相关系数 ${fmt(r,2)}）。这是“只看篮球队”造出来的。`:`全年级 500 人（往右 = 个子高，往上 = 跑得快）：点子散成一团，个子和速度没关系（相关系数 ${fmt(r,2)}）。`}
+segmented(['co_all','co_sel'],id=>{coSel=id==='co_sel';drawColl()});drawColl();onRedraw(drawColl);
+
+/* ---------- 4 正门后门 ---------- */
+let doorOn=false;
+function drawDoor(){box('d_door',{w:440,h:160,label:'吃早饭的例子',nodes:[{id:'F',x:220,y:30,t:'家里管得严',cls:doorOn?'cond':''},{id:'B',x:80,y:125,t:'吃早饭',cls:'a'},{id:'G',x:360,y:125,t:'成绩好',cls:'y'}],
+  edges:[['F','B',doorOn?'bk':'hl'],['F','G',doorOn?'bk':'hl'],['B','G']]});
+  $('#door_btn').textContent='只比“家里管得一样严”的同学：'+(doorOn?'开':'关');$('#door_btn').classList.toggle('on',doorOn);
+  $('#doorNote').innerHTML=doorOn?'后门（虚线）关上了。现在剩下的只有正门：吃早饭 → 成绩。这时比出来的差别，才是早饭真正的作用。':'绿色加粗的是开着的后门：吃早饭 ← 家里管得严 → 成绩。现在直接比较，早饭的作用会被夸大。点上面的按钮把它关上。'}
+$('#door_btn').onclick=()=>{doorOn=!doorOn;drawDoor()};drawDoor();
+
+/* ---------- 6 我的 DAG，分步 ---------- */
+const P={A:[110,250],Y:[470,250],L:[290,150],B:[110,40],H:[110,150],T:[470,150],S:[470,340]};
+const LB={A:'出哪类题',Y:'之后做对没',L:'学会没有（看不见）',B:'基础好不好（看不见）',H:'以前做对没',T:'老师/班级',S:'这道题对没对'};
+const STEPS6=[
+ {n:['A','Y'],e:[['A','Y','bk']],t:'第 1 步：我想知道什么',x:'左边“出哪类题”是原因（大人叫“处理”），右边“之后做对没”是结果（大人叫“结局”）。虚线箭头的意思是：这就是我想知道的那个作用，它到底有多大？',s:'我关心的问题：软件出哪类题，会不会让学生之后做得更好。'},
+ {n:['L'],e:[['A','L'],['L','Y']],t:'第 2 步：中间发生了什么',x:'出了某一类题，学生练了这类题，就可能“学会”；学会了，之后就能做对。“学会没有”在学生脑子里，数据里没有，所以画成虚线框。',s:'出题通过“学会没有”影响之后做对没，这是我们想要的“正门”。'},
+ {n:['B'],e:[['B','L']],t:'第 3 步：学生的基础',x:'基础好的学生更容易学会。“基础”也是看不见的，画成虚线框。',s:'基础会影响学会没有。'},
+ {n:['H'],e:[['B','H'],['H','A']],t:'第 4 步：软件是怎么出题的',x:'软件会看学生以前做对没有，再决定出什么题（比如做对了就出下一类）。而以前做对没，又取决于学生基础好不好。于是出现了一条<b>后门</b>：出哪类题 ← 以前做对没 ← 基础 → 学会没有 → 之后做对没。图里绿色加粗的就是它。',s:'后门 1：出题和之后做对，可能只是因为“基础好”同时影响了两者。',hl:true},
+ {n:['T'],e:[['T','A'],['T','L']],t:'第 5 步：老师',x:'老师布置作业，决定学生练什么；老师上课讲得好，学生也更容易学会。这是第二条后门：出哪类题 ← 老师 → 学会没有 → 之后做对没。',s:'后门 2：老师同时影响出什么题和学得怎样。',hl:true},
+ {n:['S'],e:[['A','S'],['L','S']],t:'第 6 步：一个不能碰的框',x:'“这道题对没对”是两个箭头撞在一起的地方：出了什么题会影响它，学没学会也会影响它。就像第 3 节的“篮球队”，如果只看做对了的题，就会造出假关系。所以这个框<b>不能调整</b>。',s:'“这道题对没对”是对撞点，不要调整它。',hl:true},
+ {n:[],e:[],t:'第 7 步：关后门',x:'“以前做对没”有数据，只比以前对错差不多的学生（方框），后门 1 就关上了。但“老师”在大多数数据集里没有记录（ASSISTments 有，但论文没用），后门 2 还开着。',s:'能关的后门：以前做对没（有数据）。关不上的后门：老师（没数据）。',cond:['H'],hl:true}];
+let st6=0;
+function drawStep(){const nodes=new Set(),edges=[];STEPS6.slice(0,st6+1).forEach(s=>{s.n.forEach(n=>nodes.add(n));s.e.forEach(e=>edges.push(e))});
+  const now=STEPS6[st6];const cond=new Set(now.cond||[]);
+  const realE=edges.filter(e=>e[2]!=='bk'||st6===0);
+  const finalE=st6===0?realE:realE.filter(e=>e[2]!=='bk');
+  let hl=new Set();if(now.hl){const paths=dagPaths(finalE.map(e=>[e[0],e[1]]),'A','Y',cond);paths.filter(p=>p.open&&p.backdoor).forEach(p=>{for(let i=0;i<p.nodes.length-1;i++){const a=p.nodes[i],b=p.nodes[i+1];hl.add(p.dirs[i]==='out'?a+b:b+a)}})}
+  box('d_mine',{w:600,h:390,label:'我的数据的因果图',nodes:[...nodes].map(n=>({id:n,x:P[n][0],y:P[n][1],t:LB[n],cls:[n==='A'?'a':'',n==='Y'?'y':'',(n==='L'||n==='B')?'hid':'',n==='T'?'unused':'',cond.has(n)?'cond':'',now.n.includes(n)&&st6>0?'newn':''].join(' ')})),
+    edges:finalE.map(([a,b,c])=>[a,b,c==='bk'?'bk':hl.has(a+b)?'hl':''])});
+  $('#st_title').textContent=now.t;$('#st_text').innerHTML=now.x;$('#st_say').innerHTML='<b>上台时说：</b>'+now.s;$('#st_n').textContent=`${st6+1} / ${STEPS6.length}`;
+  $('#st_prev').disabled=st6===0;$('#st_next').disabled=st6===STEPS6.length-1}
+$('#st_prev').onclick=()=>{if(st6>0){st6--;drawStep()}};$('#st_next').onclick=()=>{if(st6<STEPS6.length-1){st6++;drawStep()}};drawStep();
+
+/* ---------- 7 四个数据集 ---------- */
+const DSX={
+ assist:{n:'ASSISTments',extra:['T','Hn','Q'],text:'<p><b>美国的数学练习系统。</b>它比别的数据集多记了两样东西：</p><p>· <b>老师和班级</b>（teacher_id、student_class_id）：可以用来关上“老师”那条后门。论文没用，图里画成灰色。</p><p>· <b>提示</b>（学生点了几次“提示”）：出的题难、学生不会，都会让人点提示。它也是一个对撞点，不能调整。</p><p>· 还有一个特别的规则：<b>连续做对 3 题，这一类题就结束了</b>。所以“还在做这类题”本身就取决于对错，只看“还在做”的学生会有偏差。</p>'},
+ ednet:{n:'EdNet',extra:['Q'],text:'<p><b>韩国的英语考试练习软件。</b>这份数据最简单：只有“哪道题”和“对错”。</p><p>· 没有老师、没有提示的记录，所以“老师”那条后门画成虚线（存在但没数据）。</p><p>· 整理数据时<b>只留下做了 100 题以上的学生</b>，每人取前 100 题。做得多的学生可能本来就更认真，所以这批学生不能代表所有学生。图里用“留在数据里”表示。</p>'},
+ algebra:{n:'Algebra 2005',extra:['T','Hn'],text:'<p><b>美国的代数辅导软件（Cognitive Tutor）。</b></p><p>· 记录了<b>课程单元</b>（学到第几单元），单元决定了练哪几类题，也和上课进度有关。图里的“老师/课程”画成灰色：有数据，论文没用。</p><p>· 记录了<b>提示次数</b>和<b>错误次数</b>，和 ASSISTments 的提示一样，是对撞点。</p><p>· 每个学生只保留了最近 500 步。</p>'},
+ junyi:{n:'Junyi',extra:['Pq'],text:'<p><b>台湾的数学学习网站。</b></p><p>· 它独有的是<b>“先修关系”</b>：比如要先学会“加法”才能学“乘法”。没学会前面的，后面的就很难学会。图里多了“先学的会没会”指向“学会没有”的箭头。</p><p>· 先修关系只影响“学会没有”，不影响软件出题（在我们的设定里），所以它<b>不是</b>后门上的东西，不需要调整。</p><p>· 模拟器的 Junyi 版也保留了 12 条先修关系。</p>'}};
+const P7={A:[110,250],Y:[470,250],L:[290,150],B:[110,40],H:[110,150],T:[470,150],S:[470,340],Hn:[290,340],Q:[620,340],Pq:[290,40]};
+const LB7={...LB,T:'老师/班级',Hn:'提示',Q:'留在数据里',Pq:'先学的会没会'};
+let dsK='assist';
+function drawDS(){const D=DSX[dsK];const lb={...LB7};if(dsK==='algebra')lb.T='课程单元';
+  $('#dsBtns').innerHTML=Object.entries(DSX).map(([k,v])=>`<button class="btn ${k===dsK?'on':''}" data-k="${k}">${v.n}</button>`).join('');
+  const nodes=['A','Y','L','B','H','S','T',...D.extra.filter(x=>x!=='T')];
+  const E=[['A','L'],['L','Y'],['B','L'],['B','H'],['H','A'],['T','A'],['T','L'],['A','S'],['L','S']];
+  if(D.extra.includes('Hn'))E.push(['A','Hn'],['L','Hn'],['Hn','S']);
+  if(D.extra.includes('Q'))E.push(['S','Q']);
+  if(D.extra.includes('Pq'))E.push(['Pq','L']);
+  const tStatus=D.extra.includes('T')?'unused':'hid';
+  box('d_ds',{w:700,h:390,label:D.n+' 的因果图',nodes:nodes.map(n=>({id:n,x:P7[n][0],y:P7[n][1],t:lb[n],cls:[n==='A'?'a':'',n==='Y'?'y':'',(n==='L'||n==='B')?'hid':'',n==='T'?tStatus:'',n==='Hn'?'unused':'',n==='Q'?'cond':'',n==='Pq'?'used':''].join(' ')})),edges:E});
+  $('#dsText').innerHTML=D.text+'<p class="small muted">灰色框：数据里有，论文没用。虚线框：没有数据。粗边方框：数据本身已经“只看了这一部分”。</p>'}
+$('#dsBtns').addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(!b)return;dsK=b.dataset.k;drawDS()});drawDS();
+
+/* ---------- 8 模拟器 ---------- */
+box('d_sim',{w:600,h:300,label:'模拟器的因果图',nodes:[{id:'B',x:110,y:40,t:'聪明程度（程序定的）',cls:'hid'},{id:'H',x:110,y:150,t:'以前做对没',cls:'cond'},{id:'A',x:110,y:260,t:'出哪类题',cls:'a'},{id:'L',x:330,y:150,t:'学会没有（程序定的）',cls:'hid'},{id:'Y',x:500,y:260,t:'之后做对没',cls:'y'}],
+  edges:[['B','H'],['H','A'],['B','L'],['A','L'],['L','Y']]});
+
+/* ---------- 9 检查清单 ---------- */
+const CHK=['我能用冰淇淋的例子说清楚“相关不等于因果”','我能指出图里的“处理”和“结局”','我能说出为什么“学会没有”画成虚线','我能指出后门 1（基础）和后门 2（老师）','我能说出“以前做对没”为什么要调整','我能说出“这道题对没对”为什么不能调整','我能用“时光倒流”解释模拟器的好处','我把第 6 节从第 1 步点到第 7 步练过一遍'];
+let ck={};try{ck=JSON.parse(localStorage.getItem('dagEasyChk')||'{}')}catch(e){ck={}}
+$('#checkList').innerHTML=CHK.map((t,i)=>`<label><input type="checkbox" id="ck${i}" ${ck[i]?'checked':''}><span>${t}</span></label>`).join('');
+$('#checkList').addEventListener('change',e=>{const m=e.target.id.match(/ck(\d+)/);if(!m)return;ck[m[1]]=e.target.checked;try{localStorage.setItem('dagEasyChk',JSON.stringify(ck))}catch(_){}});
+</script>
+</body>
+</html>
