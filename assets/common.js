@@ -120,7 +120,7 @@ function dag(el,spec){
     const off=n=>{const hw=nw(n)/2+3,hh=nh/2+3;const s=Math.min(hw/Math.abs(dx/d||1e-9),hh/Math.abs(dy/d||1e-9));return s};
     const s1=off(p),s2=off(q)+4;const x1=p.x+dx/d*s1,y1=p.y+dy/d*s1,x2=q.x-dx/d*s2,y2=q.y-dy/d*s2;
     const hl=(cls||'').includes('hl');
-    return `<path class="ed ${cls||''}" d="M${x1},${y1} L${x2},${y2}" marker-end="url(#${uid}${hl?'h':'n'})"/>`};
+    return `<path class="ed ${cls||''}" d="M${x1},${y1} L${x2},${y2}" marker-end="url(#${uid}${hl?'h':'n'})"/><path class="hit" data-e="${a}>${b}" d="M${x1},${y1} L${x2},${y2}"/>`};
   el.innerHTML=`<svg class="dag" viewBox="0 0 ${spec.w} ${spec.h}" role="img" aria-label="${spec.label||'因果图'}">
    <defs><marker id="${uid}n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk-n" d="M0,0 L10,5 L0,10 z"/></marker>
    <marker id="${uid}h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="mk-h" d="M0,0 L10,5 L0,10 z"/></marker></defs>
