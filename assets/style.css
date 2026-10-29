@@ -214,3 +214,19 @@ td.hl,th.hl{background:var(--sunk)}
 @media (max-width:760px){.chfoot{grid-template-columns:minmax(0,1fr)}}
 .stack>*,.prose>*,.takeaway>*,.panel>*,.two>*,.hero-grid>*{min-width:0}
 .quiz>*,.q>*{min-width:0} .q .btn{white-space:normal;text-align:left;max-width:100%}
+/* 数据集 DAG 页：节点状态 */
+.dag .nd.used rect{stroke:var(--accent);stroke-width:2.4}
+.dag .nd.unused rect{fill:var(--sunk);stroke:var(--muted);stroke-width:1.5}
+.dag .nd.sel rect{stroke-width:4}
+.dag .nd.newn rect{stroke:var(--w1);stroke-width:3}
+.clickable .dag .nd{cursor:pointer}
+.clickable .dag .nd:focus-visible rect{stroke:var(--accent);stroke-width:4}
+.keybox{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.keybox span{display:inline-flex;align-items:center;gap:6px}
+.keybox i{display:inline-block;width:22px;height:13px;border-radius:7px;border:2px solid var(--ink);background:var(--surface)}
+.keybox i.u{border-color:var(--accent)} .keybox i.n{background:var(--sunk);border-color:var(--muted)} .keybox i.h{border-style:dashed;border-color:var(--muted)}
+.keybox i.a{border-color:var(--w1)} .keybox i.y{border-color:var(--w0)} .keybox i.c{border-radius:3px;border-color:var(--accent);border-width:3px;background:var(--sunk)}
+.info{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--sunk);font-size:14px;display:grid;gap:6px;min-height:120px}
+.info .t{font-weight:700}
+.info .cols{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.step-n{font-family:var(--f-mono);color:var(--accent);font-weight:600}

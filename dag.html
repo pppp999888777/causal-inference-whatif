@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>我的数据集 DAG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+<style>#mainDag .dag,#demoDag .dag,#simDag .dag{max-width:920px}
+@media (max-width:700px){#mainDag,#demoDag,#simDag{overflow-x:auto}#mainDag .dag,#demoDag .dag,#simDag .dag{min-width:640px}}</style>
+</head>
+<body>
+<nav class="top" aria-label="本页导航"><div class="wrap">
+  <a href="index.html"><b>←</b>目录</a>
+  <a href="#talk"><b>1′</b>一分钟讲稿</a>
+  <a href="#basics"><b>A</b>DAG 原理</a>
+  <a href="#data"><b>B</b>四个数据集</a>
+  <a href="#dag"><b>C</b>数据集的 DAG</a>
+  <a href="#demo"><b>D</b>演示模式</a>
+  <a href="#sim"><b>E</b>模拟器</a>
+  <a href="#method"><b>F</b>方法对照</a>
+  <a href="#qa"><b>?</b>老师会问</a>
+</div></nav>
+
+<header class="hero chap"><div class="wrap hero-grid">
+  <div>
+    <div class="eyebrow">展示用 · 知识追踪论文的四个数据集</div>
+    <h1>用 DAG 讲清楚我的数据</h1>
+    <p class="lead">ASSISTments 2009、EdNet、Algebra 2005、Junyi 四个数据集，加上论文里用来算“真值”的 12 技能模拟器。这一页先教你 DAG 的基本原理，再把每个数据集画成一张可以点、可以条件化的因果图，最后给一个一步一步搭图的演示模式，明天可以直接拿它讲。</p>
+  </div>
+  <div class="takeaway">
+    <div class="label">图例</div>
+    <div class="keybox" style="display:grid;gap:6px">
+      <span><i class="a"></i>处理：第 t 步选哪个技能 A<sub>t</sub></span>
+      <span><i class="y"></i>结局：之后的作答 Y<sub>t+</sub>（奖励由它算出）</span>
+      <span><i class="u"></i>数据里有、论文也用了</span>
+      <span><i class="n"></i>原始数据里有、论文没用</span>
+      <span><i class="h"></i>没观测到（潜变量或没记录）</span>
+      <span><i class="c"></i>方框 = 已经条件化（调整了）</span>
+    </div>
+  </div>
+</div></header>
+
+<main>
+<!-- ============ 讲稿 ============ -->
+<section class="ch" id="talk"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">1′</span><h2>一分钟讲稿（可以照着念）</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p><b>1. 问题。</b>我的论文关心的因果问题是：在第 t 步给学生选哪个技能 A<sub>t</sub>，会怎样影响他之后的作答和学习 Y<sub>t+</sub>。</p>
+      <p><b>2. 数据里有什么。</b>四个数据集在论文里都整理成同样的四列：学生、技能、对错、顺序。真正决定学习的“掌握状态”和“学生能力”都看不到，是潜变量。</p>
+      <p><b>3. 关联从哪来。</b>除了 A<sub>t</sub> → 掌握 → Y<sub>t+</sub> 这条因果路径，还有后门路径：系统根据学生过去的对错来选题，而过去的对错又反映了学生能力，能力本身就影响之后的作答。ASSISTments 和 Algebra 里，老师和课程单元也同时影响选题和学习。</p>
+      <p><b>4. 所以要调整。</b>要把后门路径关上，需要条件化“过去的历史”。真实日志里还有没记录的课堂因素关不上，所以论文用一个自己写的模拟器来得到真值：在模拟器里 DAG 是我们定的，选题只依赖历史，后门路径可以完全关上。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">讲的时候配合哪张图</div>
+      <p>第 1 句：打开下面“演示模式”，停在第 1 步（只有 A 和 Y）。</p>
+      <p>第 2 句：第 2–3 步（加入看不到的掌握状态和能力）。</p>
+      <p>第 3 句：第 4–6 步（加入选题机制、课堂、提示），第 7 步高亮后门路径。</p>
+      <p>第 4 句：第 8–9 步（论文实际调整了什么、还缺什么），然后切到“模拟器”数据集，展示所有后门路径都能关上。</p>
+      <p class="small muted">如果老师让你展示某一个数据集，用“C 数据集的 DAG”里的标签切换，再点节点读右边的说明。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 原理 ============ -->
+<section class="ch" id="basics"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">A</span><h2>DAG 原理：五分钟速成</h2></div>
+  <div class="two" style="margin-bottom:16px">
+    <div class="prose">
+      <p><b>DAG</b>（有向无环图）：每个<b>节点</b>是一个变量，每条<b>箭头</b> X → Y 表示 X 对 Y 有直接的因果作用。“有向”是箭头有方向；“无环”是沿箭头走不回自己（原因必须在结果之前）。</p>
+      <p><b>画图的硬规矩</b>：任意两个变量的<b>共同原因</b>都必须画出来，哪怕没测量（用虚线框）。漏画共同原因，图就不能用来判断偏倚。</p>
+      <p><b>没有箭头也是一种主张</b>：两个节点之间不画箭头，等于你声称“它们之间没有直接因果作用”。老师问“为什么这里没箭头”时，你要能说出理由。</p>
+      <p><b>路径</b>：沿着箭头（不管方向）从一个节点走到另一个节点的路线。关联只会沿着“开着的”路径传递。</p>
+    </div>
+    <div class="prose">
+      <p><b>后门路径</b>：从处理 A 出发、第一个箭头<b>指向</b> A 的路径（A ← … → Y）。它带来的关联不是 A 的因果效应，叫<b>混杂</b>。</p>
+      <p><b>后门准则</b>：一组变量 L 能用来调整，当且仅当 ① L 关上了所有后门路径，② L 里没有 A 的后代。满足时，给定 L 后的关联就等于因果效应。</p>
+      <p><b>条件化</b>（调整、分层、只看某一类人）：在图上画成方框。条件化一个变量会改变哪些路径开着，规则只有三条，见右下。</p>
+      <p class="small muted">更完整的讲解在第 6、7 章：<a href="ch06.html">因果图</a>、<a href="ch07.html">混杂</a>。</p>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="lab-title"><span class="lab-tag">实验台 1</span><h3>三种结构：点按钮条件化中间的 B</h3></div>
+    <div class="row" style="margin-bottom:8px"><button class="btn" id="b_cond">条件化 B：关</button></div>
+    <div class="two" id="threeBox"></div>
+  </div>
+</div></section>
+
+<!-- ============ 数据集 ============ -->
+<section class="ch" id="data"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">B</span><h2>四个数据集：原始数据里有什么，论文用了什么</h2></div>
+  <div class="tbl-wrap panel" style="margin-bottom:14px">
+    <table>
+      <thead><tr><th>数据集</th><th>学生 / 交互 / 技能数</th><th>原始字段（节选）</th><th>论文用的</th><th>对 DAG 重要的特点</th></tr></thead>
+      <tbody>
+        <tr><td><b>ASSISTments 2009</b><br><span class="small muted">skill builder</span></td><td class="num">3,841 / 248,069 / 145</td><td class="small">user_id, problem_id, skill_id, correct, order_id, original, attempt_count, hint_count, ms_first_response, teacher_id, school_id, student_class_id, assignment_id</td><td class="small">user_id, skill_id, correct, order_id</td><td class="small">skill builder 是“掌握学习”：连续答对 3 题才结束这个技能，选题和停止都依赖过去的对错；有老师和班级字段</td></tr>
+        <tr><td><b>EdNet</b><br><span class="small muted">KT1 小样本</span></td><td class="num">5,000 / 500,000 / 98</td><td class="small">user_id, exercise_id（state）, 对错（action）, 题目到 188 个知识点的映射</td><td class="small">同上四列</td><td class="small">预处理只保留答题 ≥100 次的用户、取前 100 次，是一个按“答得多”挑出来的样本；没有老师信息</td></tr>
+        <tr><td><b>Algebra 2005</b><br><span class="small muted">KDD Cup</span></td><td class="num">574 / 209,710 / 107</td><td class="small">Anon Student Id, Problem Hierarchy（单元、小节）, Problem Name, Step Name, 时间与时长, Correct First Attempt, Incorrects, Hints, KC(Default), Opportunity</td><td class="small">同上四列（截断到最近 500 步）</td><td class="small">Cognitive Tutor 按课程单元推进，单元决定练哪些技能；有提示次数和错误次数</td></tr>
+        <tr><td><b>Junyi</b></td><td class="num">5,000 / 388,509 / 681</td><td class="small">[技能, 对错] 序列；技能之间的先修关系对</td><td class="small">同上四列 + 850 条先修边</td><td class="small">唯一带先修结构的数据集；模拟器保留了 12 个技能之间的先修边，先修没掌握时学习率乘 0.3</td></tr>
+        <tr><td><b>模拟器</b><br><span class="small muted">每个数据集一个</span></td><td class="num">2,000 日志学生；300 测试学生；12 技能；60 步</td><td class="small">由代码生成：能力 θ、掌握状态、作答、选题</td><td class="small">全部已知</td><td class="small">DAG 是自己写的，所以是“真的”；选题只依赖历史，没有老师和课堂</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">字段来自 <span class="m">论文工作流/data_cache</span> 里的原始文件；人数、交互数、技能数来自论文的 results.json。论文对四个数据集都只保留了 user_id、skill_id、correct、顺序四列。</p>
+</div></section>
+
+<!-- ============ 主 DAG ============ -->
+<section class="ch" id="dag"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">C</span><h2>每个数据集的 DAG：点节点看说明，点按钮做调整</h2></div>
+  <div class="row" style="margin-bottom:10px" id="dsTabs"></div>
+  <div class="stack">
+    <div class="clickable" id="mainDag"></div>
+    <div class="keybox"><span><i class="a"></i>处理</span><span><i class="y"></i>结局</span><span><i class="u"></i>用了</span><span><i class="n"></i>有但没用</span><span><i class="h"></i>没观测</span><span><i class="c"></i>已条件化</span><span>高亮箭头 = 开着的非因果路径</span></div>
+    <div class="two">
+      <div class="info" id="nodeInfo"></div>
+      <div class="stack">
+        <div class="row" id="condRow"></div>
+        <div class="row" id="presetRow"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <h3 class="small" style="margin-bottom:8px">从 A<sub>t</sub> 到 Y<sub>t+</sub> 的所有路径</h3>
+    <div class="tbl-wrap"><table id="pathTbl"></table></div>
+    <div class="verdict" style="margin-top:10px" id="pathVerdict"></div>
+  </div>
+</div></section>
+
+<!-- ============ 演示 ============ -->
+<section class="ch" id="demo"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">D</span><h2>演示模式：一步一步把图搭起来</h2></div>
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn" id="d_prev">← 上一步</button>
+    <button class="btn on" id="d_next">下一步 →</button>
+    <span class="small muted">数据集：</span><select id="d_ds"></select>
+    <span class="small" id="d_count"></span>
+  </div>
+  <div class="stack">
+    <div class="info"><div class="t" id="d_title"></div><div id="d_text"></div></div>
+    <div id="demoDag"></div>
+    <p class="small muted">新加入的节点用红框标出。电脑上可以用键盘左右方向键翻页。</p>
+  </div>
+</div></section>
+
+<!-- ============ 模拟器 ============ -->
+<section class="ch" id="sim"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">E</span><h2>模拟器的 DAG：这张图是“真的”</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>真实数据的 DAG 是我们<b>假设</b>的，箭头画得对不对只能靠领域知识论证。模拟器不一样：数据是代码生成的，代码就是 DAG。下面是论文代码里每个变量的生成方式：</p>
+      <div class="formula">θ<sub>i</sub> ~ N(0, 0.7²) <span class="c">学生能力</span><br>
+        M<sub>0,k</sub> ~ Bern(σ(logit p0<sub>k</sub> + θ)) <span class="c">初始掌握</span><br>
+        Y<sub>t</sub> ~ Bern( M<sub>t,a</sub> ? 1 − slip<sub>a</sub> : guess<sub>a</sub> ) <span class="c">作答</span><br>
+        学会率 = σ(logit learn<sub>a</sub> + 0.5θ) × (先修未掌握 ? 0.3 : 1)<br>
+        遗忘率 ≤ 0.003 / 步 <span class="c">没练的技能会慢慢忘</span><br>
+        A<sub>t</sub> ~ 0.5·均匀 + 0.5·softmax(−(acc<sub>k</sub> − 0.7)² / 0.02) <span class="c">日志策略，acc 是历史平滑正确率</span><br>
+        NLG = (后测 − 前测) / (1 − 前测) <span class="c">用全部 12 个技能的潜在掌握状态算</span></div>
+      <p>p0、learn、guess、slip、forget 五个参数，是对每个数据集里最常见的 12 个技能做 BKT 网格搜索最大似然拟合出来的。所以每个数据集有自己的一套参数，但<b>图的结构完全相同</b>；只有 Junyi 版多了先修边。</p>
+      <p>在模拟器里切到“C 数据集的 DAG”的“模拟器”标签：没有老师、没有提示、没有退出，选题只依赖历史对错，条件化 H<sub>t</sub> 就能关上所有后门路径。这就是为什么模拟器 NLG 可以当真值。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">和真实数据的图比，少了什么</div>
+      <p>没有课堂 C、没有提示、没有“中途退出”S：每个模拟学生都做满 60 步。剩下的后门路径全都经过 H<sub>t</sub> 或 A<sub>t−1</sub>，下图已经把它们条件化（方框），所以没有高亮的非因果路径。</p>
+      <p class="small muted">模拟器里 θ 和 M 是代码生成的，代码“知道”它们；但训练 KT 模型和做离线评估时只能看到 A、Y，和真实数据一样。</p>
+    </div>
+  </div>
+  <div id="simDag" style="margin-top:14px"></div>
+</div></section>
+
+<!-- ============ 方法对照 ============ -->
+<section class="ch" id="method"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">F</span><h2>从 DAG 看论文的方法：一个值得提前想好的问题</h2></div>
+  <div class="two">
+    <div class="prose">
+      <p>论文的 DR 估计需要两个辅助模型。看代码（<span class="m">experiment.py</span> 的 <span class="m">prep_world</span>）：</p>
+      <p><b>倾向模型 μ̂</b>：按“上一题技能 → 这一题技能”的转移次数做平滑，也就是 μ̂(a<sub>t</sub> | a<sub>t−1</sub>)，<b>只条件化了上一题是哪个技能</b>。</p>
+      <p><b>结局模型 q̂</b>：每个技能一个平滑平均奖励，q̂(k)，<b>没有用任何历史</b>。</p>
+      <p>可是在 DAG 上，选题还依赖<b>过去的对错</b> H<sub>t</sub>：模拟器的日志策略按每个技能的历史正确率选题；ASSISTments 的 skill builder 按“是否连续答对 3 题”决定下一步。于是后门路径 <span class="m">A<sub>t</sub> ← H<sub>t</sub> ← θ → M<sub>t+1</sub> → Y<sub>t+</sub></span> 没有被 μ̂ 关上，q̂ 也没有关上它。</p>
+      <p>双重稳健的意思是“两个模型有一个对就行”。这里两个模型都没条件化 H<sub>t</sub>，所以 DR 的保护可能都失效。这可以作为论文发现“DR 对所有策略都偏乐观”的<b>一个候选解释</b>，需要实验验证：把 μ̂ 改成依赖历史正确率（模拟器里可以直接用真实的日志策略概率），看偏差是否变小。</p>
+    </div>
+    <div class="paperlink">
+      <div class="t">在 C 部分的图上演示这件事</div>
+      <p>选“模拟器”或“ASSISTments”，点预设按钮“论文的倾向模型（只看上一题）”：路径表里 <span class="m">A ← H ← θ → …</span> 那几条仍然是开的。</p>
+      <p>再点“调整全部历史”：这几条关上了。ASSISTments 还剩经过“老师/班级”的路径，再点“再加老师/班级”就能全部关上，因为 ASSISTments 原始数据里其实有 teacher_id 和 student_class_id，只是论文没用。</p>
+      <p class="small muted">这是我读代码时看到的，明天如果老师没问，可以不主动讲；如果问到“你调整了哪些变量”，这就是诚实的答案。</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ============ 问答 ============ -->
+<section class="ch" id="qa"><div class="wrap">
+  <div class="ch-head"><span class="ch-num">?</span><h2>老师可能问的问题</h2></div>
+  <details><summary>你的 DAG 里，处理和结局分别是什么？</summary><p>处理是第 t 步选择的技能 A<sub>t</sub>（数据里的 skill_id）；结局是之后在这个技能上的作答 Y<sub>t+</sub>（correct），论文的奖励 r<sup>NLG</sup> 就是用练习前后的平滑正确率算出来的。模拟器里最终结局是 60 步后的 NLG。</p></details>
+  <details><summary>“掌握状态”根本观测不到，为什么要画进图里？</summary><p>DAG 的规矩是共同原因必须画，不管有没有测量。掌握状态是作答和学习的直接原因，不画它就看不出“过去的对错”和“之后的作答”之间为什么相关。画成虚线框表示没观测到。</p></details>
+  <details><summary>为什么 Y<sub>t</sub>（本题对错）不能随便调整？</summary><p>Y<sub>t</sub> 是 A<sub>t</sub> 的后代（选了这个技能才会有这道题的对错），而且它同时受掌握状态 M<sub>t</sub> 影响，是一个对撞点：A<sub>t</sub> → Y<sub>t</sub> ← M<sub>t</sub>。条件化它会打开 A<sub>t</sub> → Y<sub>t</sub> ← M<sub>t</sub> → M<sub>t+1</sub> → Y<sub>t+</sub>。在 C 部分点 Y<sub>t</sub> 按钮可以看到。论文的 r<sub>gain</sub> 把 y<sub>t</sub> 放进了“练习前掌握度”，这也是它有均值回归假象的原因之一（<a href="ch09.html">第 9 章</a>）。</p></details>
+  <details><summary>四个数据集的 DAG 一样吗？</summary><p>核心部分一样：能力 → 掌握 → 作答，历史 → 选题。不同之处：ASSISTments 有老师、班级、提示，而且掌握学习的停止规则让“还在做题”依赖对错；Algebra 有课程单元和提示；Junyi 有先修关系；EdNet 这份数据只有题目和对错，而且只保留了答题 ≥100 次的用户。</p></details>
+  <details><summary>“还在做题 S”为什么画成方框？</summary><p>只有继续做题的学生才有后续作答，才能算奖励，所以数据本身就条件化了 S。在 ASSISTments 里，连续答对 3 题就停止，S 依赖作答 Y<sub>t</sub>；选题 A<sub>t</sub> 也影响能否继续。S 是对撞点，条件化它打开一条额外的路径，这是选择偏倚（<a href="ch08.html">第 8 章</a>）。模拟器里所有学生都做满 60 步，没有这个问题。</p></details>
+  <details><summary>EdNet 只保留答题 ≥100 次的用户，有什么影响？</summary><p>这是按“答得多”挑样本。答得多和能力、动机有关，所以这批用户不能代表全部用户。它影响结论能推广到谁（外部有效性），但只要分析时条件化了历史，不一定在样本内部造成 A 对 Y 效应的偏倚；如果答题次数还受选题本身影响，就会变成选择偏倚。</p></details>
+  <details><summary>你的 DAG 能证明没有混杂吗？</summary><p>不能。DAG 是对因果结构的假设，真实数据里是否还有没画出来的共同原因，数据本身检验不了。这正是论文用模拟器的原因：模拟器的 DAG 是我们自己写的，可以保证没有遗漏。</p></details>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p>本页的 DAG 依据论文代码（论文工作流/projects/…/code/experiment.py）和原始数据文件的字段画出；真实数据中“老师/课堂”“掌握状态”等节点和箭头是基于领域知识的假设。DAG 原理见 <a href="ch06.html">第 6 章</a>、<a href="ch07.html">第 7 章</a>、<a href="ch08.html">第 8 章</a>。</p>
+</div></footer>
+
+<script src="assets/common.js"></script>
+<script>
+/* ================= 实验台 1：三种结构 ================= */
+let cond3=false;
+function drawThree(){
+  const mk=(id,name,edges,pos,explainOff,explainOn)=>{const el=document.createElement('div');el.className='stack';
+    const box=document.createElement('div');el.appendChild(box);
+    dag(box,{w:360,h:120,label:name,nodes:[{id:'A',x:50,y:pos[0],t:'A'},{id:'B',x:180,y:pos[1],t:'B',cls:cond3?'cond':''},{id:'C',x:310,y:pos[2],t:'C'}],edges:edges.map(e=>[...e,(cond3?explainOn[0]:explainOff[0])?'hl':'bk'])});
+    const p=document.createElement('p');p.className='small';p.innerHTML=`<b>${name}</b>：${cond3?explainOn[1]:explainOff[1]}`;el.appendChild(p);return el};
+  const box=$('#threeBox');box.innerHTML='';
+  const L=document.createElement('div');L.className='stack';const R=document.createElement('div');R.className='stack';
+  L.appendChild(mk('c','链 A → B → C',[['A','B'],['B','C']],[60,60,60],[true,'A 通过 B 影响 C，路径开着，A 和 C 相关。例：选题 → 掌握 → 后续作答。'],[false,'条件化中介 B 后路径被阻断：如果已经知道掌握状态，选题对后续作答就没有额外信息了。']));
+  L.appendChild(mk('f','叉 A ← B → C',[['B','A'],['B','C']],[90,30,90],[true,'B 是共同原因，路径开着，A 和 C 相关但没有因果关系。例：能力 → 过去对错、能力 → 后续作答。'],[false,'条件化共同原因 B 后路径被阻断。这就是“调整混杂因子”。']));
+  R.appendChild(mk('k','对撞 A → B ← C',[['A','B'],['C','B']],[30,90,30],[false,'B 是共同结果（对撞点），路径本来就被阻断，A 和 C 无关。例：选题 → 本题对错 ← 掌握状态。'],[true,'条件化对撞点 B 反而打开路径：只看“答对了”的那些步，选题和掌握状态就相关了。这是选择偏倚的来源。']));
+  const rule=document.createElement('div');rule.className='callout';rule.innerHTML='<b>记住一句话</b>链和叉：条件化中间的变量会<b>关上</b>路径。对撞：条件化中间的变量（或它的后代）会<b>打开</b>路径。高亮的箭头 = 路径开着。';R.appendChild(rule);
+  box.append(L,R);
+  $('#b_cond').textContent='条件化 B：'+(cond3?'开':'关');$('#b_cond').classList.toggle('on',cond3)}
+$('#b_cond').onclick=()=>{cond3=!cond3;drawThree()};drawThree();
+
+/* ================= 数据集 DAG ================= */
+const POS={th:[100,40],M:[300,130],M1:[520,130],P:[680,40],H:[100,230],Y1:[680,230],Ap:[100,330],A:[300,330],Y:[520,330],C:[100,430],Hn:[410,430],S:[680,430]};
+const DS={
+ assist:{name:'ASSISTments 2009',C:['老师/班级 C','unused'],Hn:true,S:true,P:false},
+ ednet:{name:'EdNet',C:['课堂 C','hid'],Hn:false,S:true,P:false},
+ algebra:{name:'Algebra 2005',C:['课程单元 C','unused'],Hn:true,S:true,P:false},
+ junyi:{name:'Junyi',C:['课堂 C','hid'],Hn:false,S:true,P:true},
+ sim:{name:'模拟器',C:null,Hn:false,S:false,P:true}};
+const INFO={
+ th:{t:'θ 学生能力',st:'hid',d:'学生整体的学习能力。在模拟器里是 θ ~ N(0, 0.7²)，它同时提高初始掌握概率和学会速度。真实数据里没有这一列，只能通过作答间接反映。',cols:{all:'没有对应字段',sim:'代码生成，分析时看不到'}},
+ M:{t:'Mₜ 第 t 步的掌握状态',st:'hid',d:'学生此刻是否已经掌握了各个技能。它是 BKT 和 DKT 想要估计的潜变量，直接决定本题能否答对（掌握则 1 − slip，否则 guess）。',cols:{all:'没有对应字段（潜变量）',sim:'代码里的布尔矩阵 L'}},
+ M1:{t:'Mₜ₊₁ 练习后的掌握状态',st:'hid',d:'练了 Aₜ 之后的掌握状态。练到的技能有一定概率学会（学会率依赖能力 θ，Junyi 里还依赖先修是否掌握），没练的技能会慢慢遗忘。',cols:{all:'没有对应字段（潜变量）',sim:'代码里更新后的 L'}},
+ H:{t:'Hₜ 过去的对错',st:'used',d:'到第 t 步之前每个技能答对答错的记录。它由过去的掌握状态产生，所以反映能力 θ；它又被选题机制用来决定下一题。是最主要的混杂因子。',cols:{all:'correct 列按 order 排好的前缀',assist:'correct（按 order_id 排序）',algebra:'Correct First Attempt（论文中的 correct）',sim:'代码里的 hr，日志策略用它算每个技能的平滑正确率 acc'}},
+ Ap:{t:'Aₜ₋₁ 上一题的技能',st:'used',d:'上一步练的是哪个技能。题目通常按顺序编排，所以上一题强烈预测这一题；上一题也会改变当前的掌握状态。论文的 μ̂ 只条件化了它。',cols:{all:'skill_id 的前一行'}},
+ A:{t:'Aₜ 第 t 步选的技能（处理）',st:'a',d:'这是我们关心的“处理”。真实数据里由老师、系统、课程编排决定；模拟器里由日志策略决定：50% 均匀随机，50% 偏向历史正确率接近 0.7 的技能。',cols:{assist:'skill_id',ednet:'skill_id（由 exercise_id 映射）',algebra:'KC(Default)',junyi:'技能编号',sim:'日志策略的输出'}},
+ Y:{t:'Yₜ 本题对错',st:'used',d:'第 t 步这道题答对没有。它是 Aₜ 的结果（选了这个技能才有这道题），也受当前掌握状态影响，所以是一个对撞点。',cols:{all:'correct',algebra:'Correct First Attempt'}},
+ Y1:{t:'Yₜ₊ 之后的作答（结局）',st:'y',d:'之后在同一技能上的作答。论文的奖励 r^NLG 用“练习前后的平滑正确率”算，后者就来自这些作答。模拟器里最终结局是 60 步后全部 12 个技能的 NLG。',cols:{all:'后续行的 correct',sim:'也可以看最终 NLG'}},
+ C:{t:'课堂 / 老师 / 课程',st:'',d:'老师布置哪些题、课程进行到哪一单元，决定学生练哪些技能；课堂上的讲解又直接影响学习。它是选题和学习的共同原因。',cols:{assist:'teacher_id、student_class_id、school_id、assignment_id（原始数据有，论文没用）',algebra:'Problem Hierarchy（Unit、Section，原始数据有，论文没用）',ednet:'这份数据里没有',junyi:'这份数据里没有'}},
+ Hn:{t:'提示 Hint',st:'unused',d:'学生是否求助提示。难题（由选题决定）和没掌握（由掌握状态决定）都会让人用提示，用了提示通常会被记为答错或首答不对。它是选题效应的中介之一，也是选题和掌握状态的对撞点，不应该调整。',cols:{assist:'hint_count、hint_total、attempt_count',algebra:'Hints、Incorrects'}},
+ S:{t:'S 还在做题（有后续记录）',st:'cond',d:'只有继续做题，才有之后的作答，才能算奖励，所以数据本身已经条件化了 S。ASSISTments 的 skill builder 连续答对 3 题就结束，S 依赖作答；选题太难也会让学生放弃。S 是对撞点，条件化它会带来选择偏倚。',cols:{assist:'由 skill builder 的停止规则决定',ednet:'预处理只保留答题 ≥100 次的用户',algebra:'截断到最近 500 步',junyi:'序列长度'}},
+ P:{t:'先修关系 P',st:'used',d:'技能之间的先修结构：先修技能没掌握时，后续技能很难学会。它影响学习，但不影响选题（在我们的设定里），所以不是混杂因子。',cols:{junyi:'prerequisite.json，850 条边；模拟器保留 12 条',sim:'Junyi 版模拟器：先修未掌握时学会率 × 0.3'}}};
+let cur='assist',sel='A';let condM=new Set();
+function nodeStatus(id,ds){const D=DS[ds];if(id==='C')return D.C?D.C[1]:null;if(id==='Hn')return D.Hn?'unused':null;if(id==='S')return D.S?'cond':null;if(id==='P')return D.P?'used':null;return INFO[id].st}
+function label(id,ds){if(id==='C')return DS[ds].C[0];return {th:'θ 能力',M:'Mₜ 当前掌握',M1:'Mₜ₊₁ 练后掌握',H:'Hₜ 过去对错',Ap:'Aₜ₋₁ 上一题',A:'Aₜ 本题技能',Y:'Yₜ 本题对错',Y1:'Yₜ₊ 后续对错',Hn:'提示 Hint',S:'还在做 S',P:'先修 P'}[id]}
+const ALLE=[['th','M'],['th','H'],['th','M1'],['H','A'],['Ap','A'],['Ap','M'],['C','A'],['C','M1'],['M','Y'],['A','Y'],['M','M1'],['A','M1'],['M1','Y1'],['A','Hn'],['M','Hn'],['Hn','Y'],['P','M1'],['Y','S'],['A','S']];
+function graphFor(ds,steps){const nodes=Object.keys(POS).filter(id=>nodeStatus(id,ds)!==null&&(!steps||steps.nodes.has(id)));const ns=new Set(nodes);
+  const edges=ALLE.filter(([a,b])=>ns.has(a)&&ns.has(b));return{nodes,edges}}
+const short=id=>({th:'θ',M:'Mₜ',M1:'Mₜ₊₁',H:'Hₜ',Ap:'Aₜ₋₁',A:'Aₜ',Y:'Yₜ',Y1:'Yₜ₊',C:'C',Hn:'Hint',S:'S',P:'P'}[id]);
+function pathStr(p){return p.nodes.map((n,i)=>(i?(p.dirs[i-1]==='out'?' → ':' ← '):'')+short(n)).join('')}
+function render(el,ds,cond,opt={}){const G=graphFor(ds,opt.steps);
+  const paths=dagPaths(G.edges,'A','Y1',cond);const hl=new Set();
+  if(opt.highlight!==false)paths.filter(p=>p.open&&p.nodes.length>2).forEach(p=>{for(let i=0;i<p.nodes.length-1;i++){const a=p.nodes[i],b=p.nodes[i+1];hl.add(p.dirs[i]==='out'?a+'>'+b:b+'>'+a)}});
+  dag(el,{w:780,h:470,label:DS[ds].name+' 的因果图',nodes:G.nodes.map(id=>{const st=nodeStatus(id,ds);return{id,x:POS[id][0],y:POS[id][1],t:label(id,ds),
+    cls:[st==='a'?'a':'',st==='y'?'y':'',st==='used'?'used':'',st==='unused'?'unused':'',st==='hid'?'hid':'',cond.has(id)?'cond':'',opt.sel===id?'sel':'',opt.newNodes&&opt.newNodes.has(id)?'newn':''].join(' ')}}),
+    edges:G.edges.map(([a,b])=>[a,b,hl.has(a+'>'+b)?'hl':'']).concat(opt.extra||[])});
+  return paths}
+function drawMain(){
+  $('#dsTabs').innerHTML=Object.entries(DS).map(([k,v])=>`<button class="btn ${k===cur?'on':''}" data-ds="${k}">${v.name}</button>`).join('');
+  const G=graphFor(cur);const condable=G.nodes.filter(id=>!['A','Y1','th','M','M1'].includes(id)&&!(id==='C'&&nodeStatus('C',cur)==='hid'));
+  $('#condRow').innerHTML='<span class="small muted">条件化：</span>'+condable.map(id=>`<button class="btn ${condM.has(id)?'on':''}" data-c="${id}">${short(id)}</button>`).join('');
+  const presets=[['none','不调整'],['paper','论文的倾向模型（只看上一题）'],['hist','调整全部历史']];if(nodeStatus('C',cur)==='unused')presets.push(['histC','再加'+label('C',cur).replace(' C','')]);
+  $('#presetRow').innerHTML='<span class="small muted">预设：</span>'+presets.map(([k,n])=>`<button class="btn" data-p="${k}">${n}</button>`).join('');
+  const paths=render($('#mainDag'),cur,condM,{sel});
+  const info=INFO[sel];const st=nodeStatus(sel,cur);const stName={a:'处理',y:'结局',used:'数据里有、论文用了',unused:'原始数据里有、论文没用',hid:'没观测到',cond:'数据本身已经条件化'}[st]||'';
+  $('#nodeInfo').innerHTML=`<div class="t">${sel==='C'?label('C',cur):info.t}　<span class="pill">${stName}</span></div><div>${info.d}</div><div class="cols">${DS[cur].name} 中的字段：${info.cols[cur]||info.cols.all||'—'}</div>`;
+  const ord=p=>p.dirs.every(d=>d==='out')?0:p.open?1:2;paths.sort((a,b)=>ord(a)-ord(b));
+  $('#pathTbl').innerHTML='<thead><tr><th>路径</th><th>类型</th><th>状态</th></tr></thead><tbody>'+paths.map(p=>{const causal=p.dirs.every(d=>d==='out');
+    return `<tr><td class="num">${pathStr(p)}</td><td>${causal?'因果路径':p.backdoor?'后门路径':'经过对撞点的路径'}</td><td>${p.open?`<span class="${causal?'ok-t':'bad-t'}">开</span>`:`<span class="muted">阻断（${short(p.blocked.v)}：${p.blocked.why}）</span>`}</td></tr>`}).join('')+'</tbody>';
+  const bad=paths.filter(p=>p.open&&!p.dirs.every(d=>d==='out'));const blockedCausal=paths.filter(p=>!p.open&&p.dirs.every(d=>d==='out'));
+  const desc=[...condM].filter(id=>['Y','Hn','S'].includes(id));
+  let v=bad.length?`还有 <b>${bad.length}</b> 条非因果路径开着，A 和 Y 的关联里混着偏倚（图中高亮）。`:'所有非因果路径都关上了：在这个调整下，关联 = 因果。';
+  if(blockedCausal.length)v+=` 注意有 ${blockedCausal.length} 条因果路径被挡住了，调整了中介。`;
+  if(desc.length&&desc.some(d=>d!=='S'))v+=` 你调整了 A 的后代（${desc.filter(d=>d!=='S').map(short).join('、')}），违反后门准则第 2 条。`;
+  if(condM.has('S'))v+=' 你条件化了 S：它是“本题对错”这个对撞点的后代，一下子打开了很多路径。这就是“只分析继续做题的学生”带来的选择偏倚，真实日志去不掉这个方框。';
+  else if(DS[cur].S)v+=' 想看选择偏倚，打开 S 按钮（真实日志里只有继续做题的人才有后续记录）。';
+  $('#pathVerdict').innerHTML=v}
+$('#dsTabs').addEventListener('click',e=>{const b=e.target.closest('button[data-ds]');if(!b)return;cur=b.dataset.ds;condM=new Set();if(nodeStatus(sel,cur)===null)sel='A';drawMain()});
+$('#condRow').addEventListener('click',e=>{const b=e.target.closest('button[data-c]');if(!b)return;const id=b.dataset.c;condM.has(id)?condM.delete(id):condM.add(id);drawMain()});
+$('#presetRow').addEventListener('click',e=>{const b=e.target.closest('button[data-p]');if(!b)return;const k=b.dataset.p;const s=condM.has('S')?['S']:[];
+  condM=new Set(k==='none'?s:k==='paper'?[...s,'Ap']:k==='hist'?[...s,'Ap','H']:[...s,'Ap','H','C']);drawMain()});
+function pickNode(e){const g=e.target.closest('g.nd');if(!g)return;sel=g.dataset.id;drawMain()}
+$('#mainDag').addEventListener('click',pickNode);
+$('#mainDag').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){pickNode(e);e.preventDefault()}});
+const tabNodes=()=>$$('#mainDag g.nd').forEach(g=>g.setAttribute('tabindex','0'));
+const _dm=drawMain;drawMain=function(){_dm();tabNodes()};drawMain();
+
+/* ================= 演示模式 ================= */
+const STEPS=[
+ {n:['A','Y1'],t:'我要回答的因果问题',x:'处理是第 t 步选哪个技能 Aₜ，结局是之后的作答 Yₜ₊。问题是：换一个技能，之后的作答（学习）会不会不同？虚线箭头表示“这就是我们想知道的那个效应”，下一步会把它拆成真正的机制。'},
+ {n:['M','M1','Y'],t:'中间的机制：看不到的掌握状态',x:'练习改变掌握状态（Aₜ → Mₜ₊₁），掌握状态决定作答（Mₜ₊₁ → Yₜ₊）。本题对错 Yₜ 由选的技能和当前掌握共同决定。掌握状态观测不到，画成虚线框。'},
+ {n:['th'],t:'学生能力',x:'能力 θ 同时影响当前掌握和学习速度。它也观测不到。'},
+ {n:['H','Ap'],t:'题目是怎么选出来的',x:'系统或老师根据过去的对错 Hₜ 和上一题 Aₜ₋₁ 来选这一题。过去的对错由能力产生，于是出现了第一条后门路径：Aₜ ← Hₜ ← θ → … → Yₜ₊。'},
+ {n:['C'],t:'课堂和课程',x:'老师布置的作业、课程进度决定练什么，课堂讲解也直接影响学习。这是第二个共同原因。ASSISTments 有老师和班级字段，Algebra 有课程单元，EdNet 和 Junyi 没有记录。'},
+ {n:['Hn','S','P'],t:'各数据集特有的东西',x:'提示（ASSISTments、Algebra）：选题和掌握状态的共同结果，不该调整。还在做题 S：只有继续做题才有后续记录，数据本身就条件化了它，会带来选择偏倚。先修关系 P（Junyi）：影响学习，但不影响选题，不是混杂因子。'},
+ {n:[],t:'所有的后门路径',x:'现在不做任何调整。高亮的就是开着的非因果路径：直接比较“练了某技能的学生”和“没练的学生”，会混进这些偏倚。（这里先不考虑 S 带来的选择偏倚，在 C 部分可以单独打开。）',cond:[]},
+ {n:[],t:'论文实际调整了什么',x:'论文的倾向模型 μ̂ 只条件化了上一题 Aₜ₋₁。经过“过去对错 Hₜ”的后门路径还开着。',cond:['Ap']},
+ {n:[],t:'应该调整什么',x:'条件化全部历史（Aₜ₋₁ 和 Hₜ），能力相关的后门路径就关上了。剩下经过课堂 C 的路径：ASSISTments 可以用 teacher_id 关上，其他数据集关不上。这就是论文要用模拟器的原因。',cond:['Ap','H']}];
+let dstep=0,dds='assist';
+$('#d_ds').innerHTML=Object.entries(DS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+function drawDemo(){const s=STEPS[dstep];const nodes=new Set();STEPS.slice(0,dstep+1).forEach(x=>x.n.forEach(n=>nodes.add(n)));
+  const cond=new Set((s.cond||[]).filter(id=>nodeStatus(id,dds)!==null));
+  render($('#demoDag'),dds,cond,{steps:{nodes},newNodes:new Set(s.n),highlight:dstep>=6,extra:dstep===0?[['A','Y1','bk']]:[]});
+  $('#d_title').innerHTML=`<span class="step-n">${dstep+1} / ${STEPS.length}</span>　${s.t}`;$('#d_text').textContent=s.x;$('#d_count').textContent='';
+  $('#d_prev').disabled=dstep===0;$('#d_next').disabled=dstep===STEPS.length-1}
+$('#d_prev').onclick=()=>{if(dstep>0){dstep--;drawDemo()}};$('#d_next').onclick=()=>{if(dstep<STEPS.length-1){dstep++;drawDemo()}};
+$('#d_ds').onchange=()=>{dds=$('#d_ds').value;drawDemo()};
+document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea'))return;const r=$('#demo').getBoundingClientRect();if(r.top>window.innerHeight||r.bottom<0)return;
+  if(e.key==='ArrowRight'){$('#d_next').click()}else if(e.key==='ArrowLeft'){$('#d_prev').click()}});
+drawDemo();
+
+/* ================= 模拟器的图 ================= */
+render($('#simDag'),'sim',new Set(['H','Ap']),{highlight:false});
+</script>
+</body>
+</html>

@@ -125,7 +125,7 @@ function dag(el,spec){
    <defs><marker id="${uid}n" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="mk-n" d="M0,0 L10,5 L0,10 z"/></marker>
    <marker id="${uid}h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path class="mk-h" d="M0,0 L10,5 L0,10 z"/></marker></defs>
    ${spec.edges.map(edge).join('')}
-   ${spec.nodes.map(n=>`<g class="nd ${n.cls||''}"><rect x="${n.x-nw(n)/2}" y="${n.y-nh/2}" width="${nw(n)}" height="${nh}" rx="${(n.cls||'').includes('cond')?3:17}"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`).join('')}</svg>`;
+   ${spec.nodes.map(n=>`<g class="nd ${n.cls||''}" data-id="${n.id}"><rect x="${n.x-nw(n)/2}" y="${n.y-nh/2}" width="${nw(n)}" height="${nh}" rx="${(n.cls||'').includes('cond')?3:17}"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`).join('')}</svg>`;
 }
 
 /* ---------- 自测 ---------- */
